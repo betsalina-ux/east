@@ -1,4 +1,4 @@
-use client';
+'use client';
 
 import { useState } from 'react';
 import { useSmartChartsApi } from '@/hooks/use-smartcharts-api';
