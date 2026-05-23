@@ -1,11 +1,9 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { IBM_Plex_Sans } from 'next/font/google';
 import { buildFaviconUri } from '@/lib/build-favicon-uri';
 import { inter, FONT_CLASS_MAP } from '@/lib/fonts';
 import { TemplateLayout } from '@/components/custom/template-layout';
-import '@/app/globals.css';
 import './globals.css';
-import '@deriv-com/smartcharts-champion/dist/smartcharts.css';
 import './custom.css';
 
 // SmartCharts declares `font-family: IBM Plex Sans, sans-serif` internally.
@@ -44,3 +42,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+
