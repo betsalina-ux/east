@@ -19,3 +19,5 @@ export type Direction = 'CALL' | 'PUT';
 export type PositionFilter = 'open' | 'closed' | 'all';
 
 export type { DurationSelectUnit, DurationOption } from '@/lib/duration-utils';
+
+export interface DigitStats { digit: number; count: number; percentage: number; }
