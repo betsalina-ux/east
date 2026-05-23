@@ -23,8 +23,8 @@ const ibmPlexSans = IBM_Plex_Sans({
 export function generateMetadata(): Metadata {
   const faviconUri = buildFaviconUri();
   return {
-    title: 'Deriv Rise/Fall Trading App',
-    description: 'A white-label trading application powered by Deriv',
+    title: 'MarketEye Trading App',
+    description: 'MarketEye Rise/Fall and Digits trading templates powered by Deriv',
     ...(faviconUri ? { icons: { icon: faviconUri } } : {}),
   };
 }

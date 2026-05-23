@@ -20,4 +20,20 @@ export type PositionFilter = 'open' | 'closed' | 'all';
 
 export type { DurationSelectUnit, DurationOption } from '@/lib/duration-utils';
 
-export interface DigitStats { digit: number; count: number; percentage: number; }
+
+// Digit-specific types
+export type ContractMode =
+  | 'DIGITMATCH'
+  | 'DIGITDIFF'
+  | 'DIGITOVER'
+  | 'DIGITUNDER'
+  | 'DIGITEVEN'
+  | 'DIGITODD';
+
+export type TradeType = 'matches-differs' | 'over-under' | 'even-odd';
+
+export interface DigitStats {
+  counts: number[];
+  percentages: number[];
+  totalTicks: number;
+}
