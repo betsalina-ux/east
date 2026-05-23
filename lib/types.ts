@@ -19,21 +19,3 @@ export type Direction = 'CALL' | 'PUT';
 export type PositionFilter = 'open' | 'closed' | 'all';
 
 export type { DurationSelectUnit, DurationOption } from '@/lib/duration-utils';
-
-
-// Digit-specific types
-export type ContractMode =
-  | 'DIGITMATCH'
-  | 'DIGITDIFF'
-  | 'DIGITOVER'
-  | 'DIGITUNDER'
-  | 'DIGITEVEN'
-  | 'DIGITODD';
-
-export type TradeType = 'matches-differs' | 'over-under' | 'even-odd';
-
-export interface DigitStats {
-  counts: number[];
-  percentages: number[];
-  totalTicks: number;
-}

@@ -82,7 +82,3 @@
     padding: 0;
   }
 }
-
-
-/* MarketEye two-template switcher spacing */
-@media (max-width: 1023px) { body { overscroll-behavior: none; } }
