@@ -15,7 +15,7 @@ const URLS = {
     publicWs: 'wss://api.derivws.com/trading/v1/options/ws/public',
   },
   preview: {
-   authBase: 'https://auth.deriv.com/oauth2',
+    authBase: 'https://auth.deriv.com/oauth2',
     apiBase: 'https://staging-api.derivws.com/trading/v1/options',
     publicWs: 'wss://staging-api.derivws.com/trading/v1/options/ws/public',
   },
