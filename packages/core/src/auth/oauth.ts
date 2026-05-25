@@ -42,7 +42,7 @@ async function buildPkceParams(config: AuthConfig): Promise<URLSearchParams> {
  */
 export async function buildAuthorizationUrl(config: AuthConfig): Promise<string> {
   const params = await buildPkceParams(config);
-  return `${getAuthBaseUrl()}/authorize?${params.toString()}`;
+  return `${getAuthBaseUrl()}/auth?${params.toString()}`;
 }
 
 /**
