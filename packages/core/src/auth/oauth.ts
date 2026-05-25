@@ -62,7 +62,7 @@ export async function buildSignUpUrl(config: AuthConfig): Promise<string> {
   if (config.utmSource) params.set('utm_source', config.utmSource);
   if (config.utmMedium) params.set('utm_medium', config.utmMedium);
   if (config.utmCampaign) params.set('utm_campaign', config.utmCampaign);
-  return `${getAuthBaseUrl()}/authorize?${params.toString()}`;
+  return `${getAuthBaseUrl()}/auth?${params.toString()}`;
 }
 
 /**
