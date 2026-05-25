@@ -53,7 +53,16 @@ export async function buildAuthorizationUrl(config: AuthConfig): Promise<string>
  * Stores CSRF token and code verifier in sessionStorage.
  */
 export async function buildSignUpUrl(config: AuthConfig): Promise<string> {
-  return `https://oauth.deriv.com/oauth2/authorize?app_id=${config.clientId}&l=en&brand=deriv&action=signup`;
+  const params = await buildPkceParams(config);
+  params.set('prompt', 'registration');
+  if (config.affiliateToken) {
+    const tokenParam = config.affiliateTokenParam ?? 't';
+    params.set(tokenParam, config.affiliateToken);
+  }
+  if (config.utmSource) params.set('utm_source', config.utmSource);
+  if (config.utmMedium) params.set('utm_medium', config.utmMedium);
+  if (config.utmCampaign) params.set('utm_campaign', config.utmCampaign);
+  return `${getAuthBaseUrl()}/authorize?${params.toString()}`;
 }
 
 /**
