@@ -42,7 +42,7 @@ async function buildPkceParams(config: AuthConfig): Promise<URLSearchParams> {
  */
 export async function buildAuthorizationUrl(config: AuthConfig): Promise<string> {
   const params = await buildPkceParams(config);
-  return `${getAuthBaseUrl()}/auth?${params.toString()}`;
+  return `${getAuthBaseUrl()}/authorize?${params.toString()}`;
 }
 
 /**
@@ -65,7 +65,7 @@ export async function buildSignUpUrl(config: AuthConfig): Promise<string> {
   if (config.utmMedium)   params.set('utm_medium', config.utmMedium);
   if (config.utmCampaign) params.set('utm_campaign', config.utmCampaign);
 
-  return `${getAuthBaseUrl()}/auth?${params.toString()}`;
+  return `${getAuthBaseUrl()}/authorize?${params.toString()}`;
 }
 
 /**
