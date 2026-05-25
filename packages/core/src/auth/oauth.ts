@@ -41,7 +41,8 @@ async function buildPkceParams(config: AuthConfig): Promise<URLSearchParams> {
  * Stores CSRF token and code verifier in sessionStorage.
  */
 export async function buildAuthorizationUrl(config: AuthConfig): Promise<string> {
-  return `https://oauth.deriv.com/oauth2/authorize?app_id=${config.clientId}&l=en&brand=deriv`;
+  const params = await buildPkceParams(config);
+  return `${getAuthBaseUrl()}/authorize?${params.toString()}`;
 }
 
 /**
