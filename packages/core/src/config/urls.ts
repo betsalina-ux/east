@@ -10,12 +10,12 @@ function getEnv(): DerivEnv {
 
 const URLS = {
   production: {
-    authBase: 'https://oauth.deriv.com/oauth2',
+    authBase: 'https://auth.deriv.com/oauth2',
     apiBase: 'https://api.derivws.com/trading/v1/options',
     publicWs: 'wss://api.derivws.com/trading/v1/options/ws/public',
   },
   preview: {
-    authBase: 'https://oauth.deriv.com/oauth2',
+   authBase: 'https://auth.deriv.com/oauth2',
     apiBase: 'https://staging-api.derivws.com/trading/v1/options',
     publicWs: 'wss://staging-api.derivws.com/trading/v1/options/ws/public',
   },
