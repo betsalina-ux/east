@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "npm run build:core && next build",
-"build:core": "cd packages/core && npx tsc --noEmit false --outDir dist",
-    "start": "next start",
-    "copy-smartcharts-assets": "node scripts/copy-smartcharts-assets.js",
-    "postinstall": "node scripts/copy-smartcharts-assets.js",
-    "prebuild": "node scripts/copy-smartcharts-assets.js && tsc -p packages/core/tsconfig.json"
-  },
+  "dev": "next dev",
+  "prebuild": "node scripts/copy-smartcharts-assets.js",
+  "build": "npm run build:core && next build",
+  "build:core": "cd packages/core && npx tsc --noEmit false --outDir dist",
+  "start": "next start",
+  "copy-smartcharts-assets": "node scripts/copy-smartcharts-assets.js",
+  "postinstall": "node scripts/copy-smartcharts-assets.js"
+}
   "dependencies": {
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
