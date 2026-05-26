@@ -29,14 +29,14 @@ export function getCSRFToken(): string | null {
 }
 
 export function clearCSRFToken(): void {
-  sessionStorage.removeItem(CSRF_TOKEN_KEY);
+  localStorage.removeItem(CSRF_TOKEN_KEY);
 }
 
 // --- PKCE Code Verifier ---
 
 export function storeCodeVerifier(verifier: string): void {
   const stored: StoredCodeVerifier = { value: verifier, createdAt: Date.now() };
-  sessionStorage.setItem(CODE_VERIFIER_KEY, JSON.stringify(stored));
+  localStorage.setItem(CODE_VERIFIER_KEY, JSON.stringify(stored));
 }
 
 export function getCodeVerifier(): string | null {
