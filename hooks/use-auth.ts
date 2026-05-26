@@ -132,7 +132,11 @@ async function startDerivOAuth(
     params.set('prompt', 'registration');
   }
 
-  window.location.href = `https://auth.deriv.com/oauth2/auth?${params.toString()}`;
+ const finalUrl = `https://auth.deriv.com/oauth2/auth?${params.toString()}`;
+
+console.log('MarketEye Deriv OAuth URL:', finalUrl);
+
+window.location.href = finalUrl;
 }
 
 export interface UseAuthReturn {
