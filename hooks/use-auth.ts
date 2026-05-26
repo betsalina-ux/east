@@ -153,7 +153,7 @@ async function exchangeCodeManually(code: string): Promise<AuthInfo> {
     throw new Error('Missing PKCE code verifier');
   }
 
-  const response = await fetch('https://auth.deriv.com/oauth2/token', {
+  const response = await fetch('/api/deriv/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
