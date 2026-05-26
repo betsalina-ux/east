@@ -2,16 +2,29 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const contentType = req.headers.get('content-type') || '';
 
-    console.log('MarketEye token route body:', {
-      hasCode: !!body.code,
-      hasVerifier: !!body.code_verifier,
-      redirect_uri: body.redirect_uri,
-      client_id: body.client_id,
-    });
+    let code = '';
+    let code_verifier = '';
+    let redirect_uri = '';
+    let client_id = '';
 
-    const { code, code_verifier, redirect_uri, client_id } = body;
+    if (contentType.includes('application/json')) {
+      const body = await req.json();
+
+      code = body.code;
+      code_verifier = body.code_verifier;
+      redirect_uri = body.redirect_uri;
+      client_id = body.client_id;
+    } else {
+      const text = await req.text();
+      const params = new URLSearchParams(text);
+
+      code = params.get('code') || '';
+      code_verifier = params.get('code_verifier') || '';
+      redirect_uri = params.get('redirect_uri') || '';
+      client_id = params.get('client_id') || '';
+    }
 
     if (!code || !code_verifier || !redirect_uri || !client_id) {
       return NextResponse.json(
@@ -44,27 +57,20 @@ export async function POST(req: Request) {
       }
     );
 
-    const text = await derivResponse.text();
+    const responseText = await derivResponse.text();
 
-    let data: unknown;
+    let data;
 
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(responseText);
     } catch {
-      data = { raw: text };
+      data = { raw: responseText };
     }
-
-    console.log('Deriv token route response:', {
-      status: derivResponse.status,
-      data,
-    });
 
     return NextResponse.json(data, {
       status: derivResponse.status,
     });
   } catch (err) {
-    console.error('MarketEye token route crashed:', err);
-
     return NextResponse.json(
       {
         error: 'server_error',
