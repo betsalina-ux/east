@@ -13,7 +13,7 @@ const TOKEN_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
 
 export function storeCSRFToken(token: string): void {
   const stored: StoredCSRFToken = { value: token, createdAt: Date.now() };
-  sessionStorage.setItem(CSRF_TOKEN_KEY, JSON.stringify(stored));
+  localStorage.setItem(CSRF_TOKEN_KEY, JSON.stringify(stored));
 }
 
 export function getCSRFToken(): string | null {
