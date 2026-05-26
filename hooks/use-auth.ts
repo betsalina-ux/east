@@ -262,30 +262,40 @@ export function useAuth(): UseAuthReturn {
       }
 
       if (code) {
-        setAuthState('authenticating');
+  setAuthState('authenticating');
 
-        try {
-          const authInfo =
-            await handleOAuthCallback(
-              window.location.href,
-              getAuthConfig()
-            );
+  try {
+    const authInfo =
+      await handleOAuthCallback(
+        window.location.href,
+        getAuthConfig()
+      );
 
-          await completeAuth(authInfo);
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Authentication failed'
-          );
+    console.log('MarketEye auth success:', authInfo);
 
-          setAuthState('error');
+    await completeAuth(authInfo);
 
-          clearAllAuthData();
-        }
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+  } catch (err) {
+    console.error('MarketEye auth failed:', err);
 
-        return;
-      }
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Authentication failed'
+    );
+
+    setAuthState('error');
+
+    clearAllAuthData();
+  }
+
+  return;
+}
 
       const storedAuth = getAuthInfo();
 
