@@ -214,7 +214,8 @@ export function useAuth(): UseAuthReturn {
 
   // Phase 1: Initiate login — standard PKCE flow, no attribution params
   const login = useCallback(async () => {
-  await initiateLogin(getAuthConfig());
+  const config = getAuthConfig();
+  window.location.href = `https://auth.deriv.com/oauth2/auth?scope=trade&response_type=code&client_id=${config.clientId}&redirect_uri=${encodeURIComponent(config.redirectUri)}&state=${Math.random().toString(36).slice(2)}`;
 }, []);
 
   // Initiate sign-up — adds prompt=registration and partner attribution params
