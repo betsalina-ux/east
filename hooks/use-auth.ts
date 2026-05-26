@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  handleOAuthCallback,
   refreshAccessToken,
   fetchAccounts,
   getWebSocketOTP,
   logout as coreLogout,
   getAuthInfo,
- getDerivAccounts,
+  getDerivAccounts,
   getActiveLoginId,
   setActiveLoginId,
   setAccountType,
@@ -31,24 +30,21 @@ function getAuthConfig(): AuthConfig {
       (typeof window !== 'undefined' ? window.location.origin : ''),
   };
 
-  const scopesEnv =
-    process.env.NEXT_PUBLIC_DERIV_OAUTH_SCOPES ?? 'trade';
+  const scopesEnv = process.env.NEXT_PUBLIC_DERIV_OAUTH_SCOPES ?? 'trade,account_manage';
 
   config.scopes = scopesEnv
     .split(',')
     .map((s) => s.trim())
     .join(' ');
 
-  const referralLink =
-    process.env.NEXT_PUBLIC_DERIV_REFERRAL_LINK ?? '';
+  const referralLink = process.env.NEXT_PUBLIC_DERIV_REFERRAL_LINK ?? '';
 
   if (referralLink) {
     const referral = parseReferralLink(referralLink);
 
     if (referral) {
       config.affiliateToken = referral.affiliateToken;
-      config.affiliateTokenParam =
-        referral.affiliateTokenParam;
+      config.affiliateTokenParam = referral.affiliateTokenParam;
       config.utmCampaign = referral.utmCampaign;
       config.utmSource = referral.utmSource;
       config.utmMedium = referral.utmMedium;
@@ -63,18 +59,13 @@ function randomString(length = 96): string {
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
 
   const values = new Uint8Array(length);
-
   crypto.getRandomValues(values);
 
-  return Array.from(
-    values,
-    (v) => chars[v % chars.length]
-  ).join('');
+  return Array.from(values, (v) => chars[v % chars.length]).join('');
 }
 
 function base64Url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-
   let binary = '';
 
   bytes.forEach((b) => {
@@ -87,12 +78,24 @@ function base64Url(buffer: ArrayBuffer): string {
     .replace(/=+$/, '');
 }
 
+function readStoredValue(key: string): string | null {
+  const raw = localStorage.getItem(key) || sessionStorage.getItem(key);
+
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.value ?? raw;
+  } catch {
+    return raw;
+  }
+}
+
 async function startDerivOAuth(
   config: AuthConfig,
   signUp = false
 ): Promise<void> {
   const state = randomString(32);
-
   const verifier = randomString(96);
 
   const digest = await crypto.subtle.digest(
@@ -102,27 +105,26 @@ async function startDerivOAuth(
 
   const challenge = base64Url(digest);
 
-  localStorage.setItem(
-    'oauth_csrf_token',
-    JSON.stringify({
-      value: state,
-      createdAt: Date.now(),
-    })
-  );
+  const storedState = JSON.stringify({
+    value: state,
+    createdAt: Date.now(),
+  });
 
-  localStorage.setItem(
-    'oauth_code_verifier',
-    JSON.stringify({
-      value: verifier,
-      createdAt: Date.now(),
-    })
-  );
+  const storedVerifier = JSON.stringify({
+    value: verifier,
+    createdAt: Date.now(),
+  });
+
+  localStorage.setItem('oauth_csrf_token', storedState);
+  localStorage.setItem('oauth_code_verifier', storedVerifier);
+  sessionStorage.setItem('oauth_csrf_token', storedState);
+  sessionStorage.setItem('oauth_code_verifier', storedVerifier);
 
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
-    scope: config.scopes ?? 'trade',
+    scope: config.scopes ?? 'trade account_manage',
     state,
     code_challenge: challenge,
     code_challenge_method: 'S256',
@@ -132,11 +134,65 @@ async function startDerivOAuth(
     params.set('prompt', 'registration');
   }
 
- const finalUrl = `https://auth.deriv.com/oauth2/auth?${params.toString()}`;
+  window.location.href = `https://auth.deriv.com/oauth2/auth?${params.toString()}`;
+}
 
-console.log('MarketEye Deriv OAuth URL:', finalUrl);
+async function exchangeCodeManually(code: string): Promise<AuthInfo> {
+  const config = getAuthConfig();
 
-window.location.href = finalUrl;
+  const storedState = readStoredValue('oauth_csrf_token');
+  const returnedState = new URL(window.location.href).searchParams.get('state');
+
+  if (storedState && returnedState && storedState !== returnedState) {
+    throw new Error('OAuth state mismatch');
+  }
+
+  const verifier = readStoredValue('oauth_code_verifier');
+
+  if (!verifier) {
+    throw new Error('Missing PKCE code verifier');
+  }
+
+  const response = await fetch('https://auth.deriv.com/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      client_id: config.clientId,
+      redirect_uri: config.redirectUri,
+      code_verifier: verifier,
+    }),
+  });
+
+  const tokenData = await response.json();
+
+  console.log('MarketEye token response:', tokenData);
+
+  if (!response.ok || !tokenData.access_token) {
+    throw new Error(tokenData.error_description || tokenData.error || 'Token exchange failed');
+  }
+
+  const authInfo: AuthInfo = {
+    access_token: tokenData.access_token,
+    token_type: tokenData.token_type ?? 'Bearer',
+    expires_in: tokenData.expires_in ?? 3600,
+    expires_at:
+      tokenData.expires_at ??
+      Math.floor(Date.now() / 1000) + (tokenData.expires_in ?? 3600),
+    scope: tokenData.scope ?? config.scopes ?? 'trade account_manage',
+    refresh_token: tokenData.refresh_token ?? '',
+  };
+
+  localStorage.setItem('auth_info', JSON.stringify(authInfo));
+  localStorage.removeItem('oauth_csrf_token');
+  localStorage.removeItem('oauth_code_verifier');
+  sessionStorage.removeItem('oauth_csrf_token');
+  sessionStorage.removeItem('oauth_code_verifier');
+
+  return authInfo;
 }
 
 export interface UseAuthReturn {
@@ -163,30 +219,21 @@ export function useAuth(): UseAuthReturn {
   const [accounts, setAccounts] =
     useState<DerivAccount[]>(() => {
       if (typeof window === 'undefined') return [];
-
       return getDerivAccounts() ?? [];
     });
 
   const [activeAccountId, setActiveAccountIdState] =
     useState<string | null>(() => {
       if (typeof window === 'undefined') return null;
-
       return getActiveLoginId() ?? null;
     });
 
-  const [wsUrl, setWsUrl] =
-    useState<string | undefined>(undefined);
-
-  const [error, setError] =
-    useState<string | null>(null);
+  const [wsUrl, setWsUrl] = useState<string | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
 
   const initRef = useRef(false);
-
-  const activeAccountIdRef =
-    useRef<string | null>(null);
-
-  const tabHiddenAtRef =
-    useRef<number | null>(null);
+  const activeAccountIdRef = useRef<string | null>(null);
+  const tabHiddenAtRef = useRef<number | null>(null);
 
   const fetchOTPUrl = useCallback(
     async (
@@ -204,31 +251,36 @@ export function useAuth(): UseAuthReturn {
 
   const completeAuth = useCallback(
     async (authInfo: AuthInfo) => {
-      const fetchedAccounts = await fetchAccounts(
-        authInfo,
-        getAuthConfig().clientId
-      );
-
-      setAccounts(fetchedAccounts);
-
-      if (fetchedAccounts.length > 0) {
-        const firstAccount = fetchedAccounts[0];
-
-        setActiveAccountIdState(
-          firstAccount.account_id
+      try {
+        const fetchedAccounts = await fetchAccounts(
+          authInfo,
+          getAuthConfig().clientId
         );
 
-        const otpUrl = await fetchOTPUrl(
-          firstAccount.account_id,
-          authInfo
-        );
+        setAccounts(fetchedAccounts);
+        localStorage.setItem('deriv_accounts', JSON.stringify(fetchedAccounts));
 
-        setWsUrl(otpUrl);
+        if (fetchedAccounts.length > 0) {
+          const firstAccount = fetchedAccounts[0];
+
+          setActiveLoginId(firstAccount.account_id);
+          setActiveAccountIdState(firstAccount.account_id);
+
+          const otpUrl = await fetchOTPUrl(
+            firstAccount.account_id,
+            authInfo
+          );
+
+          setWsUrl(otpUrl);
+        }
+
+        setAuthState('authenticated');
+        setError(null);
+      } catch (err) {
+        console.error('completeAuth failed, but token is saved:', err);
+        setAuthState('authenticated');
+        setError(err instanceof Error ? err.message : 'Account fetch failed');
       }
-
-      setAuthState('authenticated');
-
-      setError(null);
     },
     [fetchOTPUrl]
   );
@@ -240,70 +292,53 @@ export function useAuth(): UseAuthReturn {
 
     const init = async () => {
       const url = new URL(window.location.href);
-
       const code = url.searchParams.get('code');
 
-      const oauthError =
-        url.searchParams.get('error');
-
-      const oauthErrorDescription =
-        url.searchParams.get(
-          'error_description'
-        );
+      const oauthError = url.searchParams.get('error');
+      const oauthErrorDescription = url.searchParams.get('error_description');
 
       if (oauthError) {
-        setError(
-          oauthErrorDescription || oauthError
-        );
-
+        setError(oauthErrorDescription || oauthError);
         setAuthState('error');
-
         return;
       }
 
       if (code) {
-  setAuthState('authenticating');
+        setAuthState('authenticating');
 
-  try {
-    const authInfo =
-      await handleOAuthCallback(
-        window.location.href,
-        getAuthConfig()
-      );
+        try {
+          const authInfo = await exchangeCodeManually(code);
 
-    console.log('MarketEye auth success:', authInfo);
+          console.log('MarketEye auth success:', authInfo);
 
-    await completeAuth(authInfo);
+          await completeAuth(authInfo);
 
-    window.history.replaceState(
-      {},
-      document.title,
-      window.location.pathname
-    );
-  } catch (err) {
-    console.error('MarketEye auth failed:', err);
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+        } catch (err) {
+          console.error('MarketEye auth failed:', err);
 
-    setError(
-      err instanceof Error
-        ? err.message
-        : 'Authentication failed'
-    );
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Authentication failed'
+          );
 
-    setAuthState('error');
+          setAuthState('error');
+        }
 
-    clearAllAuthData();
-  }
-
-  return;
-}
+        return;
+      }
 
       const storedAuth = getAuthInfo();
 
       if (storedAuth) {
         if (
           storedAuth.expires_at &&
-          Date.now() / 1000 >
-            storedAuth.expires_at
+          Date.now() / 1000 > storedAuth.expires_at
         ) {
           try {
             const refreshed =
@@ -315,31 +350,22 @@ export function useAuth(): UseAuthReturn {
             await completeAuth(refreshed);
           } catch {
             clearAllAuthData();
-
-            setAuthState(
-              'unauthenticated'
-            );
+            setAuthState('unauthenticated');
           }
 
           return;
         }
 
-        const storedAccounts =
-          getDerivAccounts();
+        const storedAccounts = getDerivAccounts();
 
-        if (
-          storedAccounts &&
-          storedAccounts.length > 0
-        ) {
+        if (storedAccounts && storedAccounts.length > 0) {
           setAccounts(storedAccounts);
 
           const loginId =
             getActiveLoginId() ??
             storedAccounts[0].account_id;
 
-          setActiveAccountIdState(
-            loginId
-          );
+          setActiveAccountIdState(loginId);
 
           try {
             const otpUrl =
@@ -349,29 +375,12 @@ export function useAuth(): UseAuthReturn {
               );
 
             setWsUrl(otpUrl);
-
-            setAuthState(
-              'authenticated'
-            );
+            setAuthState('authenticated');
           } catch {
-            clearAllAuthData();
-
-            setAuthState(
-              'unauthenticated'
-            );
+            setAuthState('authenticated');
           }
         } else {
-          try {
-            await completeAuth(
-              storedAuth
-            );
-          } catch {
-            clearAllAuthData();
-
-            setAuthState(
-              'unauthenticated'
-            );
-          }
+          await completeAuth(storedAuth);
         }
       }
     };
@@ -380,67 +389,36 @@ export function useAuth(): UseAuthReturn {
   }, [completeAuth, fetchOTPUrl]);
 
   useEffect(() => {
-    activeAccountIdRef.current =
-      activeAccountId;
+    activeAccountIdRef.current = activeAccountId;
   }, [activeAccountId]);
 
   useEffect(() => {
-    if (
-      authState !== 'authenticated'
-    )
-      return;
+    if (authState !== 'authenticated') return;
 
-    const handleVisibilityChange =
-      async () => {
-        if (
-          document.visibilityState ===
-          'hidden'
-        ) {
-          tabHiddenAtRef.current =
-            Date.now();
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'hidden') {
+        tabHiddenAtRef.current = Date.now();
+        return;
+      }
 
-          return;
-        }
+      const hiddenAt = tabHiddenAtRef.current;
 
-        const hiddenAt =
-          tabHiddenAtRef.current;
+      if (!hiddenAt || Date.now() - hiddenAt < 30000) return;
 
-        if (
-          !hiddenAt ||
-          Date.now() - hiddenAt <
-            30000
-        )
-          return;
+      tabHiddenAtRef.current = null;
 
-        tabHiddenAtRef.current = null;
+      const accountId = activeAccountIdRef.current;
+      const authInfo = getAuthInfo();
 
-        const accountId =
-          activeAccountIdRef.current;
+      if (!authInfo || !accountId) return;
 
-        const authInfo =
-          getAuthInfo();
-
-        if (!authInfo || !accountId)
-          return;
-
-        try {
-          const otpUrl =
-            await fetchOTPUrl(
-              accountId,
-              authInfo
-            );
-
-          setWsUrl(otpUrl);
-        } catch {
-          clearAllAuthData();
-
-          setAuthState(
-            'unauthenticated'
-          );
-
-          setWsUrl(undefined);
-        }
-      };
+      try {
+        const otpUrl = await fetchOTPUrl(accountId, authInfo);
+        setWsUrl(otpUrl);
+      } catch {
+        setWsUrl(undefined);
+      }
+    };
 
     document.addEventListener(
       'visibilitychange',
@@ -455,58 +433,38 @@ export function useAuth(): UseAuthReturn {
   }, [authState, fetchOTPUrl]);
 
   const login = useCallback(async () => {
-    await startDerivOAuth(
-      getAuthConfig(),
-      false
-    );
+    await startDerivOAuth(getAuthConfig(), false);
   }, []);
 
-  const signUp = useCallback(
-    async () => {
-      await startDerivOAuth(
-        getAuthConfig(),
-        true
-      );
-    },
-    []
-  );
+  const signUp = useCallback(async () => {
+    await startDerivOAuth(getAuthConfig(), true);
+  }, []);
 
   const logout = useCallback(() => {
     coreLogout();
 
     setAccounts([]);
-
     setActiveAccountIdState(null);
-
     setWsUrl(undefined);
-
-    setAuthState(
-      'unauthenticated'
-    );
-
+    setAuthState('unauthenticated');
     setError(null);
   }, []);
 
   const switchAccount =
     useCallback(
       async (accountId: string) => {
-        const authInfo =
-          getAuthInfo();
+        const authInfo = getAuthInfo();
 
         if (!authInfo) return;
 
         try {
           const account =
             accounts.find(
-              (a) =>
-                a.account_id ===
-                accountId
+              (a) => a.account_id === accountId
             );
 
           if (account) {
-            setAccountType(
-              account.account_type
-            );
+            setAccountType(account.account_type);
           }
 
           const otpUrl =
@@ -515,14 +473,8 @@ export function useAuth(): UseAuthReturn {
               authInfo
             );
 
-          setActiveLoginId(
-            accountId
-          );
-
-          setActiveAccountIdState(
-            accountId
-          );
-
+          setActiveLoginId(accountId);
+          setActiveAccountIdState(accountId);
           setWsUrl(otpUrl);
         } catch (err) {
           setError(
@@ -537,9 +489,7 @@ export function useAuth(): UseAuthReturn {
 
   const activeAccount =
     accounts.find(
-      (acc) =>
-        acc.account_id ===
-        activeAccountId
+      (acc) => acc.account_id === activeAccountId
     ) ??
     accounts[0] ??
     null;
