@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  initiateLogin,
-  initiateSignUp,
   handleOAuthCallback,
   refreshAccessToken,
   fetchAccounts,
@@ -27,25 +25,60 @@ function getAuthConfig(): AuthConfig {
       (typeof window !== 'undefined' ? window.location.origin : ''),
   };
 
-  // Convert comma-separated scopes to space-separated (OAuth spec)
-  const scopesEnv = process.env.NEXT_PUBLIC_DERIV_OAUTH_SCOPES ?? '';
-  if (scopesEnv) {
-    config.scopes = scopesEnv.split(',').map((s) => s.trim()).join(' ');
-  }
+  const scopesEnv = process.env.NEXT_PUBLIC_DERIV_OAUTH_SCOPES ?? 'trade';
+  config.scopes = scopesEnv.split(',').map((s) => s.trim()).join(' ');
 
   const referralLink = process.env.NEXT_PUBLIC_DERIV_REFERRAL_LINK ?? '';
   if (referralLink) {
     const referral = parseReferralLink(referralLink);
     if (referral) {
-      config.affiliateToken      = referral.affiliateToken;
+      config.affiliateToken = referral.affiliateToken;
       config.affiliateTokenParam = referral.affiliateTokenParam;
-      config.utmCampaign         = referral.utmCampaign;
-      config.utmSource           = referral.utmSource;
-      config.utmMedium           = referral.utmMedium;
+      config.utmCampaign = referral.utmCampaign;
+      config.utmSource = referral.utmSource;
+      config.utmMedium = referral.utmMedium;
     }
   }
 
   return config;
+}
+
+function randomString(length = 96): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const values = new Uint8Array(length);
+  crypto.getRandomValues(values);
+  return Array.from(values, (v) => chars[v % chars.length]).join('');
+}
+
+function base64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  bytes.forEach((b) => (binary += String.fromCharCode(b)));
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function startDerivOAuth(config: AuthConfig, signUp = false): Promise<void> {
+  const state = randomString(32);
+  const verifier = randomString(96);
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const challenge = base64Url(digest);
+
+  localStorage.setItem('oauth_csrf_token', JSON.stringify({ value: state, createdAt: Date.now() }));
+  localStorage.setItem('oauth_code_verifier', JSON.stringify({ value: verifier, createdAt: Date.now() }));
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: config.clientId,
+    redirect_uri: config.redirectUri,
+    scope: config.scopes ?? 'trade',
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  });
+
+  if (signUp) params.set('prompt', 'registration');
+
+  window.location.href = `https://auth.deriv.com/oauth2/auth?${params.toString()}`;
 }
 
 export interface UseAuthReturn {
@@ -69,7 +102,7 @@ export function useAuth(): UseAuthReturn {
     if (typeof window === 'undefined') return [];
     return getDerivAccounts() ?? [];
   });
-  const [activeAccountId, setActiveAccountId] = useState<string | null>(() => {
+  const [activeAccountId, setActiveAccountIdState] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     return getActiveLoginId() ?? null;
   });
@@ -79,12 +112,10 @@ export function useAuth(): UseAuthReturn {
   const activeAccountIdRef = useRef<string | null>(null);
   const tabHiddenAtRef = useRef<number | null>(null);
 
-  // Fetch OTP WebSocket URL for an account
   const fetchOTPUrl = useCallback(async (accountId: string, authInfo: AuthInfo): Promise<string> => {
     return getWebSocketOTP(accountId, authInfo, getAuthConfig().clientId);
   }, []);
 
-  // Complete auth: fetch accounts → get OTP → set WS URL
   const completeAuth = useCallback(async (authInfo: AuthInfo) => {
     const fetchedAccounts = await fetchAccounts(authInfo, getAuthConfig().clientId);
     setAccounts(fetchedAccounts);
@@ -92,15 +123,16 @@ export function useAuth(): UseAuthReturn {
     if (fetchedAccounts.length > 0) {
       const firstAccount = fetchedAccounts[0];
       setActiveAccountId(firstAccount.account_id);
+      setActiveAccountIdState(firstAccount.account_id);
 
       const otpUrl = await fetchOTPUrl(firstAccount.account_id, authInfo);
       setWsUrl(otpUrl);
     }
 
     setAuthState('authenticated');
+    setError(null);
   }, [fetchOTPUrl]);
 
-  // Initialize: check for OAuth callback or existing session
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
@@ -108,8 +140,15 @@ export function useAuth(): UseAuthReturn {
     const init = async () => {
       const url = new URL(window.location.href);
       const code = url.searchParams.get('code');
+      const oauthError = url.searchParams.get('error');
+      const oauthErrorDescription = url.searchParams.get('error_description');
 
-      // Phase 3-5: Handle OAuth callback
+      if (oauthError) {
+        setError(oauthErrorDescription || oauthError);
+        setAuthState('error');
+        return;
+      }
+
       if (code) {
         setAuthState('authenticating');
         try {
@@ -123,44 +162,34 @@ export function useAuth(): UseAuthReturn {
         return;
       }
 
-      // Check for existing session
       const storedAuth = getAuthInfo();
       if (storedAuth) {
-        // Check if token is expired
         if (storedAuth.expires_at && Date.now() / 1000 > storedAuth.expires_at) {
-          // Try to refresh
           try {
-            const refreshed = await refreshAccessToken(
-              storedAuth.refresh_token,
-              getAuthConfig().clientId
-            );
+            const refreshed = await refreshAccessToken(storedAuth.refresh_token, getAuthConfig().clientId);
             await completeAuth(refreshed);
           } catch {
-            // Refresh failed — fall back to unauthenticated (public WS)
             clearAllAuthData();
             setAuthState('unauthenticated');
           }
           return;
         }
 
-        // Valid stored session — restore accounts and get fresh OTP
         const storedAccounts = getDerivAccounts();
         if (storedAccounts && storedAccounts.length > 0) {
           setAccounts(storedAccounts);
           const loginId = getActiveLoginId() ?? storedAccounts[0].account_id;
-          setActiveAccountId(loginId);
+          setActiveAccountIdState(loginId);
 
           try {
             const otpUrl = await fetchOTPUrl(loginId, storedAuth);
             setWsUrl(otpUrl);
             setAuthState('authenticated');
           } catch {
-            // OTP fetch failed — token may be invalid, clear and fallback
             clearAllAuthData();
             setAuthState('unauthenticated');
           }
         } else {
-          // Have auth info but no accounts — re-fetch
           try {
             await completeAuth(storedAuth);
           } catch {
@@ -174,13 +203,10 @@ export function useAuth(): UseAuthReturn {
     init();
   }, [completeAuth, fetchOTPUrl]);
 
-  // Keep ref in sync so visibility handler always has the current account ID
   useEffect(() => {
     activeAccountIdRef.current = activeAccountId;
   }, [activeAccountId]);
 
-  // Refresh the OTP WebSocket URL when returning to the tab after >30s of inactivity.
-  // OTP URLs are single-use, so a stale URL will cause reconnect failures.
   useEffect(() => {
     if (authState !== 'authenticated') return;
 
@@ -212,28 +238,23 @@ export function useAuth(): UseAuthReturn {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [authState, fetchOTPUrl]);
 
-  // Phase 1: Initiate login — standard PKCE flow, no attribution params
   const login = useCallback(async () => {
-  await initiateLogin(getAuthConfig());
-}, []);
-
-  // Initiate sign-up — adds prompt=registration and partner attribution params
-  const signUp = useCallback(async () => {
-    await initiateSignUp(getAuthConfig());
+    await startDerivOAuth(getAuthConfig(), false);
   }, []);
 
-  // Logout: close WS (handled by useDerivWS cleanup), clear storage, reset state
+  const signUp = useCallback(async () => {
+    await startDerivOAuth(getAuthConfig(), true);
+  }, []);
+
   const logout = useCallback(() => {
     coreLogout();
     setAccounts([]);
-    setActiveAccountId(null);
+    setActiveAccountIdState(null);
     setWsUrl(undefined);
     setAuthState('unauthenticated');
     setError(null);
   }, []);
 
-  // Account switch: fetch new OTP first, then update accountId and wsUrl together
-  // so reconnectKey and url change in the same render cycle with the correct OTP.
   const switchAccount = useCallback(async (accountId: string) => {
     const authInfo = getAuthInfo();
     if (!authInfo) return;
@@ -241,10 +262,10 @@ export function useAuth(): UseAuthReturn {
     try {
       const account = accounts.find((a) => a.account_id === accountId);
       if (account) setAccountType(account.account_type);
-      // Fetch OTP before updating accountId so reconnectKey and url are consistent
+
       const otpUrl = await fetchOTPUrl(accountId, authInfo);
       setActiveLoginId(accountId);
-      setActiveAccountId(accountId);
+      setActiveAccountIdState(accountId);
       setWsUrl(otpUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Account switch failed');
