@@ -17,7 +17,7 @@ export function storeCSRFToken(token: string): void {
 }
 
 export function getCSRFToken(): string | null {
-  const raw = sessionStorage.getItem(CSRF_TOKEN_KEY);
+  const raw = localStorage.getItem(CSRF_TOKEN_KEY);
   if (!raw) return null;
 
   const stored: StoredCSRFToken = JSON.parse(raw);
