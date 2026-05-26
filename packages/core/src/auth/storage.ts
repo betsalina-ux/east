@@ -40,7 +40,7 @@ export function storeCodeVerifier(verifier: string): void {
 }
 
 export function getCodeVerifier(): string | null {
-  const raw = sessionStorage.getItem(CODE_VERIFIER_KEY);
+  const raw = localStorage.getItem(CODE_VERIFIER_KEY);
   if (!raw) return null;
 
   const stored: StoredCodeVerifier = JSON.parse(raw);
@@ -52,7 +52,7 @@ export function getCodeVerifier(): string | null {
 }
 
 export function clearCodeVerifier(): void {
-  sessionStorage.removeItem(CODE_VERIFIER_KEY);
+  localStorage.removeItem(CODE_VERIFIER_KEY);
 }
 
 // --- Auth Info ---
