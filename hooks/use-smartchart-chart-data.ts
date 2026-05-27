@@ -156,10 +156,11 @@ console.log('TRADING TIMES:', tradingTimes);
     for (const s of activeSymbols) {
       if (!filledTradingTimes[s.symbol]) {
         filledTradingTimes[s.symbol] = {
-          isOpen: !!s.exchange_is_open,
-          openTime: '',
-          closeTime: '',
-        };
+  isOpen: !!s.exchange_is_open,
+  openTime: '',
+  closeTime: '',
+  delay_amount: 0,
+};
       }
     }
     return { tradingTimes: filledTradingTimes, activeSymbols };
