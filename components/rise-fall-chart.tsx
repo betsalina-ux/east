@@ -34,7 +34,7 @@ export function RiseFallChart(props: RiseFallChartProps) {
     <SmartChartWrapper
       key={`${props.symbol}-${props.isConnectionOpened ? 'on' : 'off'}`}
       chartId="rise-fall-chart"
-      defaultGranularity={0}
+      defaultGranularity={60}
       {...props}
     />
   );
