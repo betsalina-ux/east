@@ -189,7 +189,7 @@ export function RiseFallView({
     <div className="max-lg:h-[45dvh] lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
   {chartData && activeSymbol?.underlying_symbol ? (
     <RiseFallChart
-      symbolKey="rise-fall-chart"
+      symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
       symbol={activeSymbol.underlying_symbol}
       isConnectionOpened={isConnected}
       isMobile={isMobile}
