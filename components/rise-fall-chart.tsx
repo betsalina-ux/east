@@ -17,13 +17,22 @@ export interface RiseFallChartProps {
   onSymbolChange?: (symbol: string) => void;
   isLive?: boolean;
   endEpoch?: number;
-  /** Contract markers rendered on the chart when trades are placed. */
   contractsArray?: ContractMarker[];
 }
 
 export function RiseFallChart(props: RiseFallChartProps) {
+
+  if (!props.symbol) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        Loading chart...
+      </div>
+    );
+  }
+
   return (
     <SmartChartWrapper
+      key={props.symbol}
       chartId="rise-fall-chart"
       defaultGranularity={0}
       {...props}
