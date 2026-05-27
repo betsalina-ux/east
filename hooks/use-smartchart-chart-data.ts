@@ -47,12 +47,6 @@ interface TradingTimesResponse {
   };
 }
 
-/**
- * Transforms the Deriv `trading_times: 'today'` response into the simplified
- * map SmartCharts' TradingTimes store expects. Every symbol the chart might
- * render needs an entry — otherwise `getDelayedMinutes()` throws on
- * `undefined.delay_amount` when the chart calls `fetchInitialData`.
- */
 function buildTradingTimesMap(response: TradingTimesResponse): TradingTimesMap {
   const markets = response?.trading_times?.markets;
   if (!markets) return {};
@@ -65,44 +59,40 @@ function buildTradingTimesMap(response: TradingTimesResponse): TradingTimesMap {
     market.submarkets?.forEach(submarket => {
       submarket.symbols?.forEach(symbolObj => {
         const symbol = symbolObj.underlying_symbol || symbolObj.symbol;
-        const { times } = symbolObj;
-        if (!symbol || !times) return;
-        const { open, close } = times;
-        const isOpenAllDay =
-          open.length === 1 && open[0] === '00:00:00' && close[0] === '23:59:59';
-        const isClosedAllDay = open.length === 1 && open[0] === '--' && close[0] === '--';
+        const times = symbolObj.times;
 
-        let isOpen = isOpenAllDay;
+        if (!symbol || !times) return;
+
+        const open = times.open ?? [];
+        const close = times.close ?? [];
+
+        let isOpen = true;
         let openTime = '';
         let closeTime = '';
 
-        if (!isClosedAllDay && open.length > 0 && close.length > 0) {
+        if (open.length > 0 && close.length > 0 && open[0] !== '--' && close[0] !== '--') {
           openTime = `${dateStr}${open[0]}Z`;
           closeTime = `${dateStr}${close[0]}Z`;
+
           const openDate = new Date(openTime);
           const closeDate = new Date(closeTime);
+
           isOpen = now >= openDate && now < closeDate;
         }
 
         map[symbol] = {
-  isOpen,
-  openTime,
-  closeTime,
-  delay_amount: 0,
-};
+          isOpen,
+          openTime,
+          closeTime,
+          delay_amount: 0,
+        };
       });
     });
   }
+
   return map;
 }
 
-/**
- * Produces the `chartData` SmartCharts expects — a combined payload of
- * `activeSymbols` (reshaped from `ActiveSymbol`) and `tradingTimes` (fetched
- * from the `trading_times: 'today'` endpoint). Returns `undefined` until both
- * parts are ready, so the chart mounts with a complete map and its internal
- * `getDelayedMinutes()` / `isFeedUnavailable()` calls don't crash.
- */
 export function useSmartChartChartData(
   ws: DerivWS | null,
   isConnected: boolean,
@@ -112,9 +102,10 @@ export function useSmartChartChartData(
 
   useEffect(() => {
     if (!ws || !isConnected) return;
+
     let cancelled = false;
-    ws
-      .send({ trading_times: 'today' })
+
+    ws.send({ trading_times: 'today' })
       .then(response => {
         if (cancelled) return;
         setTradingTimes(buildTradingTimesMap(response as TradingTimesResponse));
@@ -123,47 +114,47 @@ export function useSmartChartChartData(
         if (cancelled) return;
         setTradingTimes({});
       });
+
     return () => {
       cancelled = true;
     };
   }, [ws, isConnected]);
-console.log('CONNECTED:', isConnected);
-console.log('SYMBOLS:', symbols);
-console.log('TRADING TIMES:', tradingTimes);
+
   const chartData = useMemo((): SmartChartChartData | undefined => {
     if (symbols.length === 0 || !tradingTimes) return undefined;
-    // Pristine @deriv-com/smartcharts-champion@1.9.12 reads these fields without null
-    // guards: `submarket_display_name.localeCompare(...)` and `pip.toString().length`
-    // crash if either is missing. Keep every field defined.
-    const activeSymbols: SmartChartsSymbol[] = symbols.map(s => ({
-      symbol: s.underlying_symbol,
-      display_name: s.underlying_symbol_name ?? s.underlying_symbol,
-      exchange_is_open: s.exchange_is_open as 0 | 1,
-      is_trading_suspended: s.is_trading_suspended as 0 | 1,
-      market: s.market ?? '',
-      market_display_name: s.market_display_name ?? s.market ?? '',
-      pip: s.pip_size ?? 0.01,
-      subgroup: s.subgroup ?? '',
-      subgroup_display_name: s.subgroup_display_name ?? s.subgroup ?? '',
-      submarket: s.submarket ?? '',
-      submarket_display_name: s.submarket_display_name ?? s.submarket ?? '',
-      symbol_type: s.underlying_symbol_type ?? '',
-    }));
-    // Ensure every activeSymbol has a tradingTimes entry. Pristine v1.9.12's
-    // `getDelayedMinutes()` does `_tradingTimesMap?.[symbol].delay_amount` — if
-    // `symbol` is missing from the map, `.delay_amount` throws on undefined.
+
+    const activeSymbols: SmartChartsSymbol[] = symbols
+      .filter(s => !!s.underlying_symbol)
+      .map(s => ({
+        symbol: s.underlying_symbol,
+        display_name: s.underlying_symbol_name ?? s.underlying_symbol,
+        exchange_is_open: (s.exchange_is_open ?? 1) as 0 | 1,
+        is_trading_suspended: (s.is_trading_suspended ?? 0) as 0 | 1,
+        market: s.market ?? '',
+        market_display_name: s.market_display_name ?? s.market ?? '',
+        pip: s.pip_size ?? 0.01,
+        subgroup: s.subgroup ?? '',
+        subgroup_display_name: s.subgroup_display_name ?? s.subgroup ?? '',
+        submarket: s.submarket ?? '',
+        submarket_display_name: s.submarket_display_name ?? s.submarket ?? '',
+        symbol_type: s.underlying_symbol_type ?? '',
+      }));
+
     const filledTradingTimes: TradingTimesMap = { ...tradingTimes };
+
     for (const s of activeSymbols) {
-      if (!filledTradingTimes[s.symbol]) {
-        filledTradingTimes[s.symbol] = {
-  isOpen: !!s.exchange_is_open,
-  openTime: '',
-  closeTime: '',
-  delay_amount: 0,
-};
-      }
+      filledTradingTimes[s.symbol] = {
+        isOpen: filledTradingTimes[s.symbol]?.isOpen ?? !!s.exchange_is_open,
+        openTime: filledTradingTimes[s.symbol]?.openTime ?? '',
+        closeTime: filledTradingTimes[s.symbol]?.closeTime ?? '',
+        delay_amount: filledTradingTimes[s.symbol]?.delay_amount ?? 0,
+      };
     }
-    return { tradingTimes: filledTradingTimes, activeSymbols };
+
+    return {
+      tradingTimes: filledTradingTimes,
+      activeSymbols,
+    };
   }, [tradingTimes, symbols]);
 
   return { chartData };
