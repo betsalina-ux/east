@@ -7,9 +7,6 @@ import {
 } from './storage';
 import { getApiBaseUrl } from '../config/urls';
 
-/**
- * Fetch the list of trading accounts for the authenticated user.
- */
 export async function fetchAccounts(
   authInfo: AuthInfo,
   clientId: string
@@ -17,7 +14,7 @@ export async function fetchAccounts(
   const response = await fetch('/api/deriv/accounts', {
     headers: {
       Authorization: `Bearer ${authInfo.access_token}`,
-      'Deriv-App-ID': clientId,
+      'x-client-id': clientId,
     },
   });
 
@@ -39,21 +36,21 @@ export async function fetchAccounts(
   return accounts;
 }
 
-/**
- * Get a one-time WebSocket URL for an authenticated session.
- */
 export async function getWebSocketOTP(
   accountId: string,
   authInfo: AuthInfo,
   clientId: string
 ): Promise<string> {
-  const response = await fetch(`${getApiBaseUrl()}/accounts/${accountId}/otp`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${authInfo.access_token}`,
-      'Deriv-App-ID': clientId,
-    },
-  });
+  const response = await fetch(
+    `/api/deriv/accounts/${accountId}/otp`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${authInfo.access_token}`,
+        'x-client-id': clientId,
+      },
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to get WebSocket OTP (${response.status})`);
@@ -63,10 +60,6 @@ export async function getWebSocketOTP(
   return data.data.url;
 }
 
-/**
- * Perform logout: clear all auth data.
- * Caller is responsible for closing any open WebSocket connections and resetting UI.
- */
 export function logout(): void {
   clearAllAuthData();
 }
