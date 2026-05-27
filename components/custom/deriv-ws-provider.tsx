@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext } from 'react';
-import { useDerivWS } from '@deriv/core';
+import { createContext, useContext, useEffect } from 'react';
+import { useDerivWS, getAuthInfo } from '@deriv/core';
 import { useAuth } from '@/hooks/use-auth';
 import type { DerivWS } from '@deriv/core';
 import type { UseAuthReturn } from '@/hooks/use-auth';
@@ -15,17 +15,26 @@ interface DerivWSContextValue {
 
 const DerivWSContext = createContext<DerivWSContextValue | null>(null);
 
-/**
- * Maintains a single WebSocket connection and auth state above all page components
- * so navigation between pages (e.g. main → reports → back) does not tear down
- * and recreate the connection.
- */
 export function DerivWSProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
+
   const { ws, isConnected, isExhausted } = useDerivWS({
-    url: auth.wsUrl,
     accountId: auth.activeAccountId ?? undefined,
   });
+
+  useEffect(() => {
+    if (!ws || !isConnected || auth.authState !== 'authenticated') return;
+
+    const authInfo = getAuthInfo();
+
+    if (!authInfo?.access_token) return;
+
+    ws.send({
+      authorize: authInfo.access_token,
+    }).catch((err) => {
+      console.error('Authorize failed:', err);
+    });
+  }, [ws, isConnected, auth.authState]);
 
   return (
     <DerivWSContext.Provider value={{ ws, isConnected, isExhausted, auth }}>
@@ -36,8 +45,10 @@ export function DerivWSProvider({ children }: { children: React.ReactNode }) {
 
 export function useDerivWSContext(): DerivWSContextValue {
   const ctx = useContext(DerivWSContext);
+
   if (!ctx) {
     throw new Error('useDerivWSContext must be used within a DerivWSProvider');
   }
+
   return ctx;
 }
