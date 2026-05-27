@@ -46,15 +46,19 @@ export function useSmartChartsApi(ws: DerivWS | null): UseSmartChartsApiReturn {
   const getQuotes = useCallback(
     async ({ symbol, granularity, count, start, end }: SmartChartsGetQuotesParams) => {
       if (!wsRef.current) throw new Error('WebSocket not connected');
+      if (!symbol) throw new Error('Symbol missing');
+
       const request: Record<string, unknown> = {
         ticks_history: symbol,
-        style: granularity ? 'candles' : 'ticks',
+        style: granularity && granularity > 0 ? 'candles' : 'ticks',
         count: count ?? 1000,
         end: end ? String(end) : 'latest',
         adjust_start_time: 1,
       };
-      if (granularity) request.granularity = granularity;
+
+      if (granularity && granularity > 0) request.granularity = granularity;
       if (start) request.start = String(start);
+
       return wsRef.current.send(request);
     },
     []
@@ -62,56 +66,66 @@ export function useSmartChartsApi(ws: DerivWS | null): UseSmartChartsApiReturn {
 
   const subscribeQuotes = useCallback(
     (
-      { symbol, granularity, style }: SmartChartsSubscribeParams,
+      { symbol, granularity }: SmartChartsSubscribeParams,
       callback: (quote: Record<string, unknown>) => void
     ): (() => void) => {
-      if (!wsRef.current) return () => { };
+      if (!wsRef.current || !symbol) return () => {};
+
       const key = `${symbol}-${granularity ?? 0}`;
+
       const request: Record<string, unknown> = {
         ticks_history: symbol,
-        style: style || granularity ? 'candles' : 'ticks',
+        style: granularity && granularity > 0 ? 'candles' : 'ticks',
         adjust_start_time: 1,
         count: 1,
         end: 'latest',
+        subscribe: 1,
       };
-      if (granularity) request.granularity = granularity;
 
-      let unsubscribeFn: () => void = () => { };
+      if (granularity && granularity > 0) request.granularity = granularity;
 
-      wsRef.current.subscribe(request, (response: Record<string, unknown>) => {
-        if (response.tick) {
-          const tick = response.tick as { epoch: number; quote: number };
-          callback({
-            Date: new Date(tick.epoch * 1000).toISOString(),
-            Close: tick.quote,
-            tick,
-            DT: new Date(tick.epoch * 1000),
-          });
-        }
-        if (response.ohlc) {
-          const ohlc = response.ohlc as {
-            open_time: number;
-            open: string;
-            high: string;
-            low: string;
-            close: string;
-          };
-          callback({
-            Date: new Date(ohlc.open_time * 1000).toISOString(),
-            Open: parseFloat(ohlc.open),
-            High: parseFloat(ohlc.high),
-            Low: parseFloat(ohlc.low),
-            Close: parseFloat(ohlc.close),
-            ohlc,
-            DT: new Date(ohlc.open_time * 1000),
-          });
-        }
-      })
+      let unsubscribeFn: () => void = () => {};
+
+      wsRef.current
+        .subscribe(request, (response: Record<string, unknown>) => {
+          if (response.tick) {
+            const tick = response.tick as { epoch: number; quote: number };
+
+            callback({
+              Date: new Date(tick.epoch * 1000).toISOString(),
+              Close: tick.quote,
+              tick,
+              DT: new Date(tick.epoch * 1000),
+            });
+          }
+
+          if (response.ohlc) {
+            const ohlc = response.ohlc as {
+              open_time: number;
+              open: string;
+              high: string;
+              low: string;
+              close: string;
+            };
+
+            callback({
+              Date: new Date(ohlc.open_time * 1000).toISOString(),
+              Open: parseFloat(ohlc.open),
+              High: parseFloat(ohlc.high),
+              Low: parseFloat(ohlc.low),
+              Close: parseFloat(ohlc.close),
+              ohlc,
+              DT: new Date(ohlc.open_time * 1000),
+            });
+          }
+        })
         .then(({ unsubscribe }) => {
           unsubscribeFn = unsubscribe;
           subscriptionRefs.current[key] = unsubscribe;
         })
-        .catch(() => { });
+        .catch(error => {
+          console.error('SmartChart subscribe error:', error);
+        });
 
       return () => {
         unsubscribeFn();
@@ -123,8 +137,10 @@ export function useSmartChartsApi(ws: DerivWS | null): UseSmartChartsApiReturn {
 
   const unsubscribeQuotes = useCallback((request?: { symbol?: string; granularity?: number }) => {
     if (!request?.symbol) return;
+
     const key = `${request.symbol}-${request.granularity ?? 0}`;
     const unsubscribe = subscriptionRefs.current[key];
+
     if (unsubscribe) {
       unsubscribe();
       delete subscriptionRefs.current[key];
