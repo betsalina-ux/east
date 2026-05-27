@@ -14,7 +14,7 @@ export async function fetchAccounts(
   authInfo: AuthInfo,
   clientId: string
 ): Promise<DerivAccount[]> {
-  const response = await fetch(`${getApiBaseUrl()}/accounts`, {
+  const response = await fetch('/api/deriv/accounts', {
     headers: {
       Authorization: `Bearer ${authInfo.access_token}`,
       'Deriv-App-ID': clientId,
