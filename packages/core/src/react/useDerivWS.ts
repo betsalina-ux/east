@@ -52,7 +52,9 @@ export function useDerivWS(options?: UseDerivWSOptions): UseDerivWSReturn {
   // Full reconnect key: changes when auth type changes OR when the account switches.
   // Stays stable when only the OTP URL string is refreshed for the same account.
   const isAuthenticated = url !== undefined;
-  const reconnectKey = isAuthenticated ? `auth:${accountId ?? 'unknown'}` : 'public';
+  const reconnectKey = isAuthenticated
+  ? `auth:${accountId ?? 'unknown'}:${url ?? ''}`
+  : 'public';
 
   useEffect(() => {
     let disposed = false;
