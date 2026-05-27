@@ -9,12 +9,14 @@ const SYMBOL_PARAM = 'symbol';
 
 function readSymbolFromUrl(): string | undefined {
   if (typeof window === 'undefined') return undefined;
-  return new URLSearchParams(window.location.search).get(SYMBOL_PARAM) ?? undefined;
+  const val = new URLSearchParams(window.location.search).get(SYMBOL_PARAM);
+  if (!val || val === 'undefined') return undefined;
+  return val;
 }
 
 function writeSymbolToUrl(symbol: string | undefined): void {
   if (typeof window === 'undefined') return;
-  if (!symbol) return;
+  if (!symbol || symbol === 'undefined') return;
   const params = new URLSearchParams(window.location.search);
   params.set(SYMBOL_PARAM, symbol);
   const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
@@ -70,6 +72,7 @@ export function useActiveSymbols(
 
   const selectSymbol = useCallback((underlyingSymbol: string) => {
     if (!ws || !isConnected) return;
+    if (!underlyingSymbol || underlyingSymbol === 'undefined') return;
 
     const symbol = symbols.find((s) => s.underlying_symbol === underlyingSymbol);
     if (!symbol || symbol.underlying_symbol === activeSymbol?.underlying_symbol) return;
@@ -100,7 +103,10 @@ export function useActiveSymbols(
         setSymbols(allSymbols);
         const chosen = pickDefaultSymbol(allSymbols, readSymbolFromUrl());
         setActiveSymbol(chosen);
-        writeSymbolToUrl(chosen.underlying_symbol);
+
+        if (chosen?.underlying_symbol) {
+          writeSymbolToUrl(chosen.underlying_symbol);
+        }
 
         await loadContractsFor(ws!, chosen);
         if (disposed) return;
