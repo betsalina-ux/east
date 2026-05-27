@@ -3,6 +3,7 @@ import { IBM_Plex_Sans } from 'next/font/google';
 import { buildFaviconUri } from '@/lib/build-favicon-uri';
 import { inter, FONT_CLASS_MAP } from '@/lib/fonts';
 import { TemplateLayout } from '@/components/custom/template-layout';
+import '@deriv-com/smartcharts-champion/dist/smartcharts.css';
 import './globals.css';
 import './custom.css';
 
