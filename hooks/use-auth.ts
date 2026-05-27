@@ -35,20 +35,14 @@ function getAuthConfig(): AuthConfig {
   };
 
   const scopesEnv =
-    process.env.NEXT_PUBLIC_DERIV_OAUTH_SCOPES ??
-    'trade,account_manage';
+    process.env.NEXT_PUBLIC_DERIV_OAUTH_SCOPES ?? 'trade,account_manage';
 
-  config.scopes = scopesEnv
-    .split(',')
-    .map((s) => s.trim())
-    .join(' ');
+  config.scopes = scopesEnv.split(',').map((s) => s.trim()).join(' ');
 
-  const referralLink =
-    process.env.NEXT_PUBLIC_DERIV_REFERRAL_LINK ?? '';
+  const referralLink = process.env.NEXT_PUBLIC_DERIV_REFERRAL_LINK ?? '';
 
   if (referralLink) {
     const referral = parseReferralLink(referralLink);
-
     if (referral) {
       config.affiliateToken = referral.affiliateToken;
       config.affiliateTokenParam = referral.affiliateTokenParam;
@@ -63,15 +57,8 @@ function getAuthConfig(): AuthConfig {
 
 function base64UrlEncode(bytes: Uint8Array): string {
   let binary = '';
-
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function generateCodeVerifier(): string {
@@ -93,17 +80,13 @@ function generateState(): string {
   return base64UrlEncode(array);
 }
 
-async function startDerivOAuth(
-  config: AuthConfig,
-  signUp = false
-): Promise<void> {
+async function startDerivOAuth(config: AuthConfig, signUp = false): Promise<void> {
   const state = generateState();
   const verifier = generateCodeVerifier();
   const challenge = await generateCodeChallenge(verifier);
 
   localStorage.setItem(PKCE_STATE_KEY, state);
   localStorage.setItem(PKCE_VERIFIER_KEY, verifier);
-
   sessionStorage.setItem(PKCE_STATE_KEY, state);
   sessionStorage.setItem(PKCE_VERIFIER_KEY, verifier);
 
@@ -119,28 +102,24 @@ async function startDerivOAuth(
 
   if (signUp) {
     params.set('prompt', 'registration');
+    if (config.affiliateToken) {
+      const tokenParam = config.affiliateTokenParam ?? 't';
+      params.set(tokenParam, config.affiliateToken);
+    }
+    if (config.utmSource) params.set('utm_source', config.utmSource);
+    if (config.utmMedium) params.set('utm_medium', config.utmMedium);
+    if (config.utmCampaign) params.set('utm_campaign', config.utmCampaign);
   }
 
-  const finalUrl = `https://auth.deriv.com/oauth2/auth?${params.toString()}`;
-
-  console.log('MarketEye OAuth URL:', finalUrl);
-  console.log('MarketEye PKCE verifier saved:', verifier);
-
-  window.location.href = finalUrl;
+  window.location.href = `https://auth.deriv.com/oauth2/auth?${params.toString()}`;
 }
 
 function getSavedVerifier(): string | null {
-  return (
-    localStorage.getItem(PKCE_VERIFIER_KEY) ||
-    sessionStorage.getItem(PKCE_VERIFIER_KEY)
-  );
+  return localStorage.getItem(PKCE_VERIFIER_KEY) || sessionStorage.getItem(PKCE_VERIFIER_KEY);
 }
 
 function getSavedState(): string | null {
-  return (
-    localStorage.getItem(PKCE_STATE_KEY) ||
-    sessionStorage.getItem(PKCE_STATE_KEY)
-  );
+  return localStorage.getItem(PKCE_STATE_KEY) || sessionStorage.getItem(PKCE_STATE_KEY);
 }
 
 function clearPkce(): void {
@@ -152,33 +131,18 @@ function clearPkce(): void {
 
 async function exchangeCodeManually(code: string): Promise<AuthInfo> {
   const config = getAuthConfig();
-
-  const returnedState =
-    new URL(window.location.href).searchParams.get('state');
-
+  const returnedState = new URL(window.location.href).searchParams.get('state');
   const savedState = getSavedState();
 
-  if (!savedState) {
-    throw new Error('Missing saved OAuth state');
-  }
-
-  if (!returnedState || returnedState !== savedState) {
-    throw new Error('OAuth state mismatch');
-  }
+  if (!savedState) throw new Error('Missing saved OAuth state');
+  if (!returnedState || returnedState !== savedState) throw new Error('OAuth state mismatch');
 
   const verifier = getSavedVerifier();
-
-  if (!verifier) {
-    throw new Error('Missing PKCE code verifier');
-  }
-
-  console.log('MarketEye exchanging code with verifier:', verifier);
+  if (!verifier) throw new Error('Missing PKCE code verifier');
 
   const response = await fetch('/api/deriv/token', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
@@ -190,28 +154,16 @@ async function exchangeCodeManually(code: string): Promise<AuthInfo> {
 
   const tokenData = await response.json();
 
-  console.log('MarketEye token response:', tokenData);
-
   if (!response.ok || !tokenData.access_token) {
-    throw new Error(
-      tokenData.error_description ||
-        tokenData.error ||
-        'Token exchange failed'
-    );
+    throw new Error(tokenData.error_description || tokenData.error || 'Token exchange failed');
   }
 
   const authInfo: AuthInfo = {
     access_token: tokenData.access_token,
     token_type: tokenData.token_type ?? 'Bearer',
     expires_in: tokenData.expires_in ?? 3600,
-    expires_at:
-      tokenData.expires_at ??
-      Math.floor(Date.now() / 1000) +
-        (tokenData.expires_in ?? 3600),
-    scope:
-      tokenData.scope ??
-      config.scopes ??
-      'trade account_manage',
+    expires_at: tokenData.expires_at ?? Math.floor(Date.now() / 1000) + (tokenData.expires_in ?? 3600),
+    scope: tokenData.scope ?? config.scopes ?? 'trade account_manage',
     refresh_token: tokenData.refresh_token ?? '',
   };
 
@@ -235,105 +187,49 @@ export interface UseAuthReturn {
 }
 
 export function useAuth(): UseAuthReturn {
-  const [authState, setAuthState] =
-    useState<AuthState>(() =>
-      typeof window !== 'undefined' && getAuthInfo()
-        ? 'authenticated'
-        : 'unauthenticated'
-    );
-
-  const [accounts, setAccounts] =
-    useState<DerivAccount[]>(() => {
-      if (typeof window === 'undefined') return [];
-      return getDerivAccounts() ?? [];
-    });
-
-  const [activeAccountId, setActiveAccountIdState] =
-    useState<string | null>(() => {
-      if (typeof window === 'undefined') return null;
-      return getActiveLoginId() ?? null;
-    });
-
-  const [wsUrl, setWsUrl] =
-    useState<string | undefined>(undefined);
-
-  const [error, setError] =
-    useState<string | null>(null);
-
+  const [authState, setAuthState] = useState<AuthState>(() =>
+    typeof window !== 'undefined' && getAuthInfo() ? 'authenticated' : 'unauthenticated'
+  );
+  const [accounts, setAccounts] = useState<DerivAccount[]>(() => {
+    if (typeof window === 'undefined') return [];
+    return getDerivAccounts() ?? [];
+  });
+  const [activeAccountId, setActiveAccountIdState] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return getActiveLoginId() ?? null;
+  });
+  const [wsUrl, setWsUrl] = useState<string | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
   const initRef = useRef(false);
-  const activeAccountIdRef =
-    useRef<string | null>(null);
-  const tabHiddenAtRef =
-    useRef<number | null>(null);
+  const activeAccountIdRef = useRef<string | null>(null);
+  const tabHiddenAtRef = useRef<number | null>(null);
 
-  const fetchOTPUrl = useCallback(
-    async (
-      accountId: string,
-      authInfo: AuthInfo
-    ): Promise<string> => {
-      return getWebSocketOTP(
-        accountId,
-        authInfo,
-        getAuthConfig().clientId
-      );
-    },
-    []
-  );
+  const fetchOTPUrl = useCallback(async (accountId: string, authInfo: AuthInfo): Promise<string> => {
+    return getWebSocketOTP(accountId, authInfo, getAuthConfig().clientId);
+  }, []);
 
-  const completeAuth = useCallback(
-    async (authInfo: AuthInfo) => {
-      try {
-        const fetchedAccounts =
-          await fetchAccounts(
-            authInfo,
-            getAuthConfig().clientId
-          );
+  const completeAuth = useCallback(async (authInfo: AuthInfo) => {
+    try {
+      const fetchedAccounts = await fetchAccounts(authInfo, getAuthConfig().clientId);
+      setAccounts(fetchedAccounts);
+      localStorage.setItem('deriv_accounts', JSON.stringify(fetchedAccounts));
 
-        setAccounts(fetchedAccounts);
-        localStorage.setItem(
-          'deriv_accounts',
-          JSON.stringify(fetchedAccounts)
-        );
-
-        if (fetchedAccounts.length > 0) {
-          const firstAccount =
-            fetchedAccounts[0];
-
-          setActiveLoginId(
-            firstAccount.account_id
-          );
-
-          setActiveAccountIdState(
-            firstAccount.account_id
-          );
-
-          const otpUrl = await fetchOTPUrl(
-            firstAccount.account_id,
-            authInfo
-          );
-
-          setWsUrl(otpUrl);
-        }
-
-        setAuthState('authenticated');
-        setError(null);
-      } catch (err) {
-        console.error(
-          'completeAuth failed, but token is saved:',
-          err
-        );
-
-        setAuthState('authenticated');
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Account fetch failed'
-        );
+      if (fetchedAccounts.length > 0) {
+        const firstAccount = fetchedAccounts[0];
+        setActiveLoginId(firstAccount.account_id);
+        setActiveAccountIdState(firstAccount.account_id);
+        const otpUrl = await fetchOTPUrl(firstAccount.account_id, authInfo);
+        setWsUrl(otpUrl);
       }
-    },
-    [fetchOTPUrl]
-  );
+
+      setAuthState('authenticated');
+      setError(null);
+    } catch (err) {
+      console.error('completeAuth failed:', err);
+      setAuthState('authenticated');
+      setError(err instanceof Error ? err.message : 'Account fetch failed');
+    }
+  }, [fetchOTPUrl]);
 
   useEffect(() => {
     if (initRef.current) return;
@@ -341,110 +237,49 @@ export function useAuth(): UseAuthReturn {
 
     const init = async () => {
       const url = new URL(window.location.href);
-      const code =
-        url.searchParams.get('code');
-
-      const oauthError =
-        url.searchParams.get('error');
-
-      const oauthErrorDescription =
-        url.searchParams.get(
-          'error_description'
-        );
+      const code = url.searchParams.get('code');
+      const oauthError = url.searchParams.get('error');
+      const oauthErrorDescription = url.searchParams.get('error_description');
 
       if (oauthError) {
-        setError(
-          oauthErrorDescription || oauthError
-        );
+        setError(oauthErrorDescription || oauthError);
         setAuthState('error');
         return;
       }
 
       if (code) {
         setAuthState('authenticating');
-
         try {
-          const authInfo =
-            await exchangeCodeManually(code);
-
-          console.log(
-            'MarketEye auth success:',
-            authInfo
-          );
-
+          const authInfo = await exchangeCodeManually(code);
           await completeAuth(authInfo);
-
-          window.history.replaceState(
-            {},
-            document.title,
-            window.location.pathname
-          );
+          window.history.replaceState({}, document.title, window.location.pathname);
         } catch (err) {
-          console.error(
-            'MarketEye auth failed:',
-            err
-          );
-
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Authentication failed'
-          );
-
+          setError(err instanceof Error ? err.message : 'Authentication failed');
           setAuthState('error');
         }
-
         return;
       }
 
       const storedAuth = getAuthInfo();
-
       if (storedAuth) {
-        if (
-          storedAuth.expires_at &&
-          Date.now() / 1000 >
-            storedAuth.expires_at
-        ) {
+        if (storedAuth.expires_at && Date.now() / 1000 > storedAuth.expires_at) {
           try {
-            const refreshed =
-              await refreshAccessToken(
-                storedAuth.refresh_token,
-                getAuthConfig().clientId
-              );
-
+            const refreshed = await refreshAccessToken(storedAuth.refresh_token, getAuthConfig().clientId);
             await completeAuth(refreshed);
           } catch {
             clearAllAuthData();
-            setAuthState(
-              'unauthenticated'
-            );
+            setAuthState('unauthenticated');
           }
-
           return;
         }
 
-        const storedAccounts =
-          getDerivAccounts();
-
-        if (
-          storedAccounts &&
-          storedAccounts.length > 0
-        ) {
+        const storedAccounts = getDerivAccounts();
+        if (storedAccounts && storedAccounts.length > 0) {
           setAccounts(storedAccounts);
-
-          const loginId =
-            getActiveLoginId() ??
-            storedAccounts[0].account_id;
-
+          const loginId = getActiveLoginId() ?? storedAccounts[0].account_id;
           setActiveAccountIdState(loginId);
-
           try {
-            const otpUrl =
-              await fetchOTPUrl(
-                loginId,
-                storedAuth
-              );
-
+            const otpUrl = await fetchOTPUrl(loginId, storedAuth);
             setWsUrl(otpUrl);
             setAuthState('authenticated');
           } catch {
@@ -460,85 +295,47 @@ export function useAuth(): UseAuthReturn {
   }, [completeAuth, fetchOTPUrl]);
 
   useEffect(() => {
-    activeAccountIdRef.current =
-      activeAccountId;
+    activeAccountIdRef.current = activeAccountId;
   }, [activeAccountId]);
 
   useEffect(() => {
     if (authState !== 'authenticated') return;
 
-    const handleVisibilityChange =
-      async () => {
-        if (
-          document.visibilityState ===
-          'hidden'
-        ) {
-          tabHiddenAtRef.current =
-            Date.now();
-          return;
-        }
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'hidden') {
+        tabHiddenAtRef.current = Date.now();
+        return;
+      }
+      const hiddenAt = tabHiddenAtRef.current;
+      if (!hiddenAt || Date.now() - hiddenAt < 30_000) return;
+      tabHiddenAtRef.current = null;
 
-        const hiddenAt =
-          tabHiddenAtRef.current;
+      const accountId = activeAccountIdRef.current;
+      const authInfo = getAuthInfo();
+      if (!authInfo || !accountId) return;
 
-        if (
-          !hiddenAt ||
-          Date.now() - hiddenAt < 30000
-        ) {
-          return;
-        }
+      try {
+        const otpUrl = await fetchOTPUrl(accountId, authInfo);
+        setWsUrl(otpUrl);
+      } catch {
+        setWsUrl(undefined);
+      }
+    };
 
-        tabHiddenAtRef.current = null;
-
-        const accountId =
-          activeAccountIdRef.current;
-
-        const authInfo = getAuthInfo();
-
-        if (!authInfo || !accountId) return;
-
-        try {
-          const otpUrl =
-            await fetchOTPUrl(
-              accountId,
-              authInfo
-            );
-
-          setWsUrl(otpUrl);
-        } catch {
-          setWsUrl(undefined);
-        }
-      };
-
-    document.addEventListener(
-      'visibilitychange',
-      handleVisibilityChange
-    );
-
-    return () =>
-      document.removeEventListener(
-        'visibilitychange',
-        handleVisibilityChange
-      );
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [authState, fetchOTPUrl]);
 
   const login = useCallback(async () => {
-    await startDerivOAuth(
-      getAuthConfig(),
-      false
-    );
+    await startDerivOAuth(getAuthConfig(), false);
   }, []);
 
   const signUp = useCallback(async () => {
-    await startDerivOAuth(
-      getAuthConfig(),
-      true
-    );
+    await startDerivOAuth(getAuthConfig(), true);
   }, []);
 
   const logout = useCallback(() => {
     coreLogout();
-
     setAccounts([]);
     setActiveAccountIdState(null);
     setWsUrl(undefined);
@@ -546,66 +343,22 @@ export function useAuth(): UseAuthReturn {
     setError(null);
   }, []);
 
-  const switchAccount =
-    useCallback(
-      async (accountId: string) => {
-        const authInfo = getAuthInfo();
+  const switchAccount = useCallback(async (accountId: string) => {
+    const authInfo = getAuthInfo();
+    if (!authInfo) return;
+    try {
+      const account = accounts.find((a) => a.account_id === accountId);
+      if (account) setAccountType(account.account_type);
+      const otpUrl = await fetchOTPUrl(accountId, authInfo);
+      setActiveLoginId(accountId);
+      setActiveAccountIdState(accountId);
+      setWsUrl(otpUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Account switch failed');
+    }
+  }, [fetchOTPUrl, accounts]);
 
-        if (!authInfo) return;
+  const activeAccount = accounts.find((acc) => acc.account_id === activeAccountId) ?? accounts[0] ?? null;
 
-        try {
-          const account =
-            accounts.find(
-              (a) =>
-                a.account_id === accountId
-            );
-
-          if (account) {
-            setAccountType(
-              account.account_type
-            );
-          }
-
-          const otpUrl =
-            await fetchOTPUrl(
-              accountId,
-              authInfo
-            );
-
-          setActiveLoginId(accountId);
-          setActiveAccountIdState(
-            accountId
-          );
-          setWsUrl(otpUrl);
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Account switch failed'
-          );
-        }
-      },
-      [fetchOTPUrl, accounts]
-    );
-
-  const activeAccount =
-    accounts.find(
-      (acc) =>
-        acc.account_id === activeAccountId
-    ) ??
-    accounts[0] ??
-    null;
-
-  return {
-    authState,
-    accounts,
-    activeAccount,
-    activeAccountId,
-    wsUrl,
-    login,
-    signUp,
-    logout,
-    switchAccount,
-    error,
-  };
+  return { authState, accounts, activeAccount, activeAccountId, wsUrl, login, signUp, logout, switchAccount, error };
 }
