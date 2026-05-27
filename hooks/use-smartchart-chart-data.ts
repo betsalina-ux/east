@@ -114,7 +114,9 @@ export function useSmartChartChartData(
       cancelled = true;
     };
   }, [ws, isConnected]);
-
+console.log('CONNECTED:', isConnected);
+console.log('SYMBOLS:', symbols);
+console.log('TRADING TIMES:', tradingTimes);
   const chartData = useMemo((): SmartChartChartData | undefined => {
     if (symbols.length === 0 || !tradingTimes) return undefined;
     // Pristine @deriv-com/smartcharts-champion@1.9.12 reads these fields without null
