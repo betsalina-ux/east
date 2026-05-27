@@ -12,8 +12,9 @@ function readSymbolFromUrl(): string | undefined {
   return new URLSearchParams(window.location.search).get(SYMBOL_PARAM) ?? undefined;
 }
 
-function writeSymbolToUrl(symbol: string): void {
+function writeSymbolToUrl(symbol: string | undefined): void {
   if (typeof window === 'undefined') return;
+  if (!symbol) return;
   const params = new URLSearchParams(window.location.search);
   params.set(SYMBOL_PARAM, symbol);
   const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
