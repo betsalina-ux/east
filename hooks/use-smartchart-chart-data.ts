@@ -84,7 +84,12 @@ function buildTradingTimesMap(response: TradingTimesResponse): TradingTimesMap {
           isOpen = now >= openDate && now < closeDate;
         }
 
-        map[symbol] = { isOpen, openTime, closeTime };
+        map[symbol] = {
+  isOpen,
+  openTime,
+  closeTime,
+  delay_amount: 0,
+};
       });
     });
   }
