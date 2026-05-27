@@ -7,6 +7,34 @@ import { pickDefaultSymbol } from '../utils/pick-default-symbol';
 
 const SYMBOL_PARAM = 'symbol';
 
+type RawActiveSymbol = Partial<ActiveSymbol> & {
+  symbol?: string;
+  display_name?: string;
+  pip?: number;
+  symbol_type?: string;
+};
+
+function normalizeActiveSymbol(raw: RawActiveSymbol): ActiveSymbol | null {
+  const underlyingSymbol = raw.underlying_symbol ?? raw.symbol;
+  if (!underlyingSymbol || underlyingSymbol === 'undefined') return null;
+
+  return {
+    exchange_is_open: Number(raw.exchange_is_open ?? 1),
+    is_trading_suspended: Number(raw.is_trading_suspended ?? 0),
+    market: raw.market ?? '',
+    market_display_name: raw.market_display_name ?? raw.market ?? '',
+    pip_size: Number(raw.pip_size ?? raw.pip ?? 0.01),
+    subgroup: raw.subgroup ?? '',
+    subgroup_display_name: raw.subgroup_display_name ?? raw.subgroup ?? '',
+    submarket: raw.submarket ?? '',
+    submarket_display_name: raw.submarket_display_name ?? raw.submarket ?? '',
+    trade_count: Number(raw.trade_count ?? 0),
+    underlying_symbol: underlyingSymbol,
+    underlying_symbol_name: raw.underlying_symbol_name ?? raw.display_name ?? underlyingSymbol,
+    underlying_symbol_type: raw.underlying_symbol_type ?? raw.symbol_type ?? '',
+  };
+}
+
 function readSymbolFromUrl(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   const val = new URLSearchParams(window.location.search).get(SYMBOL_PARAM);
@@ -89,14 +117,17 @@ export function useActiveSymbols(
     async function fetchSymbols() {
       try {
         setIsLoading(true);
-        const response = await ws!.send<{ active_symbols: ActiveSymbol[] }>({
+        const response = await ws!.send<{ active_symbols: RawActiveSymbol[] }>({
           active_symbols: 'full',
           contract_type: contractTypes,
         });
         if (disposed) return;
 
-        const allSymbols = response.active_symbols;
-        if (!allSymbols || allSymbols.length === 0) {
+        const allSymbols = (response.active_symbols ?? [])
+          .map(normalizeActiveSymbol)
+          .filter((s): s is ActiveSymbol => s !== null);
+
+        if (allSymbols.length === 0) {
           throw new Error('No symbols available');
         }
 
@@ -106,11 +137,10 @@ export function useActiveSymbols(
 
         if (chosen?.underlying_symbol) {
           writeSymbolToUrl(chosen.underlying_symbol);
+          await loadContractsFor(ws!, chosen);
         }
 
-        await loadContractsFor(ws!, chosen);
         if (disposed) return;
-
         setIsLoading(false);
       } catch {
         if (!disposed) setIsLoading(false);
