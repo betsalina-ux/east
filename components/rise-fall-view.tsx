@@ -187,25 +187,29 @@ export function RiseFallView({
           {/* Column 1: Chart */}
           <div className="max-lg:shrink-0 flex flex-col gap-2 max-lg:px-3 max-lg:pb-2 pt-2 lg:py-0">
             <div className="max-lg:h-[45dvh] lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
-              {chartData ? (
-                <RiseFallChart
-                  symbolKey="rise-fall-chart"
-                  symbol={activeSymbol?.underlying_symbol}
-                  isConnectionOpened={isConnected}
-                  isMobile={isMobile}
-                  chartData={chartData}
-                  getQuotes={getQuotes}
-                  subscribeQuotes={subscribeQuotes}
-                  unsubscribeQuotes={unsubscribeQuotes}
-                  onSymbolChange={selectSymbol}
-                  isLive={isLive}
-                  endEpoch={endEpoch}
-                  contractsArray={contractMarkers}
-                />
-              ) : (
-                <Skeleton className="h-full w-full rounded-md" />
-              )}
-            </div>
+  {chartData && activeSymbol?.underlying_symbol ? (
+    <RiseFallChart
+      symbolKey="rise-fall-chart"
+      symbol={activeSymbol.underlying_symbol}
+      isConnectionOpened={isConnected}
+      isMobile={isMobile}
+      chartData={chartData}
+      getQuotes={getQuotes}
+      subscribeQuotes={subscribeQuotes}
+      unsubscribeQuotes={unsubscribeQuotes}
+      onSymbolChange={selectSymbol}
+      isLive={isLive}
+      endEpoch={endEpoch}
+      contractsArray={contractMarkers}
+    />
+  ) : (
+    <div className="h-full w-full flex items-center justify-center rounded-md border border-border/50 bg-muted/30">
+      <div className="text-sm text-muted-foreground">
+        Loading chart...
+      </div>
+    </div>
+  )}
+</div>
           </div>
 
           {/* Column 2: Trade controls in a Card */}
