@@ -18,7 +18,15 @@ export interface SmartChartsSymbol {
   symbol_type: string;
 }
 
-export type TradingTimesMap = Record<string, { isOpen: boolean; openTime: string; closeTime: string }>;
+export type TradingTimesMap = Record<
+  string,
+  {
+    isOpen: boolean;
+    openTime: string;
+    closeTime: string;
+    delay_amount: number;
+  }
+>;
 
 export interface SmartChartChartData {
   tradingTimes: TradingTimesMap;
