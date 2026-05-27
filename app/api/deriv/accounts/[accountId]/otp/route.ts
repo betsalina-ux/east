@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   req: Request,
-  { params }: { params: { accountId: string } }
+  context: { params: Promise<{ accountId: string }> }
 ) {
   try {
+    const { accountId } = await context.params;
+
     const authHeader = req.headers.get('authorization') || '';
     const clientId = req.headers.get('x-client-id') || '';
-    const accountId = params.accountId;
 
     if (!authHeader || !clientId || !accountId) {
       return NextResponse.json(
