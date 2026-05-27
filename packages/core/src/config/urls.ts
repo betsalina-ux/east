@@ -13,12 +13,12 @@ const URLS = {
   production: {
     authBase: 'https://auth.deriv.com/oauth2',
     apiBase: 'https://api.derivws.com/trading/v1/options',
-    publicWs: 'wss://ws.derivws.com/websockets/v3?app_id=1',
+    publicWs: 'wss://api.derivws.com/trading/v1/options/ws/public',
   },
   preview: {
     authBase: 'https://auth.deriv.com/oauth2',
     apiBase: 'https://staging-api.derivws.com/trading/v1/options',
-    publicWs: 'wss://ws.derivws.com/websockets/v3?app_id=1',,
+    publicWs: 'wss://api.derivws.com/trading/v1/options/ws/public',
   },
 } as const;
 
