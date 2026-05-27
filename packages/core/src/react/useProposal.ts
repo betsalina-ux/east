@@ -35,7 +35,7 @@ export function useProposal(
       basis: params.basis,
       contract_type: params.contractType,
       currency: params.currency,
-      underlying_symbol: params.symbol,
+      symbol: params.symbol,
     };
 
     if (params.dateExpiry !== undefined) {
