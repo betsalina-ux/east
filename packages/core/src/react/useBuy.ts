@@ -20,7 +20,7 @@ function buildProposalPayload(params: ProposalParams): Record<string, unknown> {
     basis: params.basis,
     contract_type: params.contractType,
     currency: params.currency,
-    symbol: params.symbol,
+    underlying_symbol: params.symbol,
   };
 
   if (params.dateExpiry !== undefined) {
@@ -37,41 +37,15 @@ function buildProposalPayload(params: ProposalParams): Record<string, unknown> {
   return payload;
 }
 
-function buildDirectBuyPayload(params: ProposalParams): Record<string, unknown> {
-  const parameters: Record<string, unknown> = {
-    amount: params.amount,
-    basis: params.basis,
-    contract_type: params.contractType,
-    currency: params.currency,
-    symbol: params.symbol,
-  };
-
-  if (params.dateExpiry !== undefined) {
-    parameters.date_expiry = params.dateExpiry;
-  } else {
-    parameters.duration = params.duration;
-    parameters.duration_unit = params.durationUnit;
-  }
-
-  if (params.barrier !== undefined) {
-    parameters.barrier = params.barrier;
-  }
-
-  return {
-    buy: 1,
-    price: String(params.amount),
-    parameters,
-  };
-}
-
 function mapBuyResult(response: BuyResponse): BuyResult | null {
   if (!response.buy) return null;
+
   return {
-    contractId: response.buy.contract_id,
-    buyPrice: response.buy.buy_price,
-    payout: response.buy.payout,
+    contractId: Number(response.buy.contract_id),
+    buyPrice: Number(response.buy.buy_price),
+    payout: Number(response.buy.payout),
     longcode: response.buy.longcode,
-    balanceAfter: response.buy.balance_after,
+    balanceAfter: Number(response.buy.balance_after),
   };
 }
 
@@ -102,7 +76,10 @@ export function useBuy(
       });
 
       const result = mapBuyResult(response);
-      if (result) setBuyResult(result);
+      if (result) {
+        setBuyResult(result);
+        window.dispatchEvent(new CustomEvent('marketeye:refresh-accounts'));
+      }
     } catch (err) {
       setBuyError(err instanceof Error ? err.message : 'Purchase failed');
     } finally {
@@ -118,26 +95,21 @@ export function useBuy(
     setBuyResult(null);
 
     try {
-      // First try the one-click buy format. This lets the button click choose
-      // Rise/Fall or the digit contract immediately, without waiting for React
-      // state and a streaming proposal to refresh.
-      let response: BuyResponse | null = null;
+      // New Deriv Options WS does NOT allow `symbol` in proposal requests.
+      // It requires `underlying_symbol`. Also, buy should be made using the
+      // proposal ID, not by sending contract parameters directly.
+      const proposalResponse = await ws.send<ProposalResponse>(buildProposalPayload(params));
 
-      try {
-        response = await ws.send<BuyResponse>(buildDirectBuyPayload(params));
-      } catch {
-        // Some Deriv environments only accept buy-by-proposal-id. Fall back to
-        // a one-shot proposal request, then buy the returned proposal ID.
-        const proposalResponse = await ws.send<ProposalResponse>(buildProposalPayload(params));
-        if (!proposalResponse.proposal) {
-          throw new Error('Could not get contract proposal');
-        }
-
-        response = await ws.send<BuyResponse>({
-          buy: proposalResponse.proposal.id,
-          price: String(proposalResponse.proposal.ask_price),
-        });
+      if (!proposalResponse.proposal?.id) {
+        throw new Error('Could not get contract proposal');
       }
+
+      const askPrice = proposalResponse.proposal.ask_price ?? params.amount;
+
+      const response = await ws.send<BuyResponse>({
+        buy: proposalResponse.proposal.id,
+        price: String(askPrice),
+      });
 
       const result = mapBuyResult(response);
       if (result) {
