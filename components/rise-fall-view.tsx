@@ -262,7 +262,7 @@ export function RiseFallView({
             {isLoading ? (
               <Skeleton className="lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] max-lg:h-48 w-full rounded-xl" />
             ) : (
-              <Card className="max-lg:min-h-full max-lg:overflow-visible lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
+              <Card className="max-lg:h-full max-lg:overflow-y-auto lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
                 <CardContent className="pt-4 max-lg:pb-24">
                   <TradeControls
                     direction={direction}
