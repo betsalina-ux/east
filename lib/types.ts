@@ -14,7 +14,9 @@ export type {
 export type { OpenPosition } from '@/hooks/use-open-positions';
 export type { ClosedPosition } from '@/hooks/use-closed-positions';
 
-export type Direction = 'CALL' | 'PUT';
+export type Direction = 'CALL' | 'PUT' | 'ONETOUCH' | 'NOTOUCH';
+
+export type UpDownContractType = 'rise-fall' | 'higher-lower' | 'touch-no-touch';
 
 export type PositionFilter = 'open' | 'closed' | 'all';
 
