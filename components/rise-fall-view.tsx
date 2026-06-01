@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/custom/footer';
 import { Header } from '@/components/custom/header';
@@ -143,6 +144,7 @@ export function RiseFallView({
   appName,
 }: RiseFallViewProps) {
   const isMobile = useIsMobile();
+  const [isStrategyPanelOpen, setIsStrategyPanelOpen] = useState(false);
   const contractMarkers = useContractMarkers(openPositions, activeSymbol?.underlying_symbol, isMobile);
 
   if (error) {
@@ -186,32 +188,73 @@ export function RiseFallView({
        */}
       <div className="flex w-full max-w-7xl mx-auto flex-col max-lg:px-0 max-lg:py-0 px-3 py-2 sm:px-4 sm:py-4 gap-2 sm:gap-3 max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-hidden lg:flex-none lg:overflow-visible">
         <div className="max-lg:flex max-lg:flex-col max-lg:flex-1 max-lg:min-h-0 lg:grid lg:grid-cols-[1fr_400px] lg:gap-4">
-          {/* Column 1: Chart */}
+          {/* Column 1: Strategy panel + Chart */}
           <div className="max-lg:shrink-0 flex flex-col gap-2 max-lg:px-3 max-lg:pb-2 pt-2 lg:py-0">
-    <div className="max-lg:h-[45dvh] lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
-  {chartData && activeSymbol?.underlying_symbol ? (
-    <RiseFallChart
-      symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
-      symbol={activeSymbol.underlying_symbol}
-      isConnectionOpened={isConnected}
-      isMobile={isMobile}
-      chartData={chartData}
-      getQuotes={getQuotes}
-      subscribeQuotes={subscribeQuotes}
-      unsubscribeQuotes={unsubscribeQuotes}
-      onSymbolChange={selectSymbol}
-      isLive={isLive}
-      endEpoch={endEpoch}
-      contractsArray={contractMarkers}
-    />
-  ) : (
-    <div className="h-full w-full flex items-center justify-center rounded-md border border-border/50 bg-muted/30">
-      <div className="text-sm text-muted-foreground">
-        Loading chart...
-      </div>
-    </div>
-  )}
-</div>
+            <div className="rounded-2xl border border-border bg-card shadow-sm">
+              <button
+                type="button"
+                onClick={() => setIsStrategyPanelOpen(value => !value)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left"
+              >
+                <div>
+                  <p className="text-sm font-bold">Strategy Panel</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isStrategyPanelOpen ? 'ON — signals visible' : 'OFF — tap to open'}
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${isStrategyPanelOpen ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                  {isStrategyPanelOpen ? 'ON' : 'OFF'}
+                </span>
+              </button>
+
+              {isStrategyPanelOpen && (
+                <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3 text-sm">
+                  <div className="space-y-3">
+                    <div className="rounded-xl bg-muted/40 p-3">
+                      <p className="text-xs text-muted-foreground">Market</p>
+                      <p className="font-bold">Rise/Fall</p>
+                    </div>
+                    <div className="rounded-xl bg-muted/40 p-3">
+                      <p className="text-xs text-muted-foreground">Available strategies</p>
+                      <p className="font-bold">IES / Sniper RF</p>
+                    </div>
+                    <div className="rounded-xl bg-muted/40 p-3">
+                      <p className="text-xs text-muted-foreground">Signal</p>
+                      <p className="font-bold">WAIT</p>
+                    </div>
+                    <div className="rounded-xl bg-muted/40 p-3">
+                      <p className="text-xs text-muted-foreground">Data source</p>
+                      <p className="font-bold">MarketEye Deriv API / WebSocket</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={`${isStrategyPanelOpen ? 'max-lg:h-[31dvh]' : 'max-lg:h-[45dvh]'} lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]`}>
+              {chartData && activeSymbol?.underlying_symbol ? (
+                <RiseFallChart
+                  symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
+                  symbol={activeSymbol.underlying_symbol}
+                  isConnectionOpened={isConnected}
+                  isMobile={isMobile}
+                  chartData={chartData}
+                  getQuotes={getQuotes}
+                  subscribeQuotes={subscribeQuotes}
+                  unsubscribeQuotes={unsubscribeQuotes}
+                  onSymbolChange={selectSymbol}
+                  isLive={isLive}
+                  endEpoch={endEpoch}
+                  contractsArray={contractMarkers}
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center rounded-md border border-border/50 bg-muted/30">
+                  <div className="text-sm text-muted-foreground">
+                    Loading chart...
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Column 2: Trade controls in a Card */}
