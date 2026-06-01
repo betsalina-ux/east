@@ -111,6 +111,7 @@ function DigitsTemplate() {
       onSwitchAccount={switchAccount}
       logoSrc="/logo.png"
       isConnected={trading.isConnected}
+      isAuthorized={isAuthorized}
       isLoading={trading.isLoading}
       error={trading.error}
       symbols={trading.symbols}
