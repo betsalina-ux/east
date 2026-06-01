@@ -1,10 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import {
-  useProposal,
-  useBuy,
-} from '@deriv/core';
+import { useBuy } from '@deriv/core';
 import type {
   ActiveSymbol,
   Tick,
@@ -46,7 +43,7 @@ interface UseDigitsTradingReturn {
   defaultStake: number;
   proposal: ProposalInfo | null;
   isProposalLoading: boolean;
-  buyContract: () => Promise<void>;
+  buyContract: (mode?: ContractMode) => Promise<void>;
   isBuying: boolean;
   buyResult: BuyResult | null;
   buyError: string | null;
@@ -124,6 +121,7 @@ export function useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated
 
   const {
     buyContract: buyWithProposal,
+    buyContractFromParams,
     isBuying,
     buyResult,
     buyError,
@@ -152,13 +150,38 @@ export function useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated
     };
   }, [activeSymbol, contractMode, stake, duration, selectedDigit, isBuying]);
 
-  const { proposal } = useProposal(tradingWs, tradingIsConnected, proposalParams);
+  // Do not keep a live proposal subscription. Buying uses fresh params from
+  // the clicked digit button so Matches/Differs, Over/Under, and Even/Odd do
+  // not accidentally buy the previously selected side.
+  const proposal = null;
 
-  const buyContract = useCallback(async () => {
-    if (proposal) {
-      await buyWithProposal(proposal);
+  const buildParamsForMode = useCallback((mode: ContractMode): ProposalParams | null => {
+    if (!activeSymbol) return null;
+    const stakeNum = parseFloat(stake);
+    if (!stakeNum || stakeNum <= 0) return null;
+
+    const needsBarrier = mode !== 'DIGITEVEN' && mode !== 'DIGITODD';
+
+    return {
+      contractType: mode,
+      symbol: activeSymbol.underlying_symbol,
+      amount: stakeNum,
+      duration,
+      durationUnit: 't',
+      basis: 'stake' as const,
+      currency: 'USD',
+      ...(needsBarrier ? { barrier: selectedDigit } : {}),
+    };
+  }, [activeSymbol, stake, duration, selectedDigit]);
+
+  const buyContract = useCallback(async (mode?: ContractMode) => {
+    const modeToBuy = mode ?? contractMode;
+    setContractMode(modeToBuy);
+    const params = buildParamsForMode(modeToBuy);
+    if (params) {
+      await buyContractFromParams(params);
     }
-  }, [proposal, buyWithProposal]);
+  }, [contractMode, buildParamsForMode, buyContractFromParams]);
 
   return {
     isConnected,
@@ -185,7 +208,7 @@ export function useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated
     durationLimits,
     defaultStake,
     proposal,
-    isProposalLoading: isConnected && proposalParams !== null && proposal === null,
+    isProposalLoading: false,
     buyContract,
     isBuying,
     buyResult,
