@@ -183,6 +183,7 @@ export interface UseAuthReturn {
   signUp: () => Promise<void>;
   logout: () => void;
   switchAccount: (accountId: string) => Promise<void>;
+  refreshAccounts: () => Promise<void>;
   error: string | null;
 }
 
@@ -326,6 +327,34 @@ export function useAuth(): UseAuthReturn {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [authState, fetchOTPUrl]);
 
+
+  const refreshAccounts = useCallback(async () => {
+    const authInfo = getAuthInfo();
+    if (!authInfo) return;
+
+    try {
+      const fetchedAccounts = await fetchAccounts(authInfo, getAuthConfig().clientId);
+      setAccounts(fetchedAccounts);
+      localStorage.setItem('deriv_accounts', JSON.stringify(fetchedAccounts));
+
+      const currentLoginId = getActiveLoginId();
+
+      if (currentLoginId && fetchedAccounts.some((a) => a.account_id === currentLoginId)) {
+        setActiveAccountIdState(currentLoginId);
+      } else if (fetchedAccounts.length > 0) {
+        setActiveLoginId(fetchedAccounts[0].account_id);
+        setActiveAccountIdState(fetchedAccounts[0].account_id);
+      }
+    } catch (err) {
+      console.error('refreshAccounts failed:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('marketeye:refresh-accounts', refreshAccounts);
+    return () => window.removeEventListener('marketeye:refresh-accounts', refreshAccounts);
+  }, [refreshAccounts]);
+
   const login = useCallback(async () => {
     await startDerivOAuth(getAuthConfig(), false);
   }, []);
@@ -360,5 +389,5 @@ export function useAuth(): UseAuthReturn {
 
   const activeAccount = accounts.find((acc) => acc.account_id === activeAccountId) ?? accounts[0] ?? null;
 
-  return { authState, accounts, activeAccount, activeAccountId, wsUrl, login, signUp, logout, switchAccount, error };
+  return { authState, accounts, activeAccount, activeAccountId, wsUrl, login, signUp, logout, switchAccount, refreshAccounts, error };
 }
