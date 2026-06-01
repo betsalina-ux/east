@@ -38,7 +38,7 @@ function TemplateTabs({ active, onChange }: { active: TemplateKey; onChange: (va
 }
 
 function RiseFallTemplate() {
-  const { ws, isConnected, isExhausted, auth } = useDerivWSContext();
+  const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
   const trading = useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticated: !!auth.wsUrl, onAuthWSFailed: logout });
@@ -94,7 +94,7 @@ function RiseFallTemplate() {
 }
 
 function DigitsTemplate() {
-  const { ws, isConnected, isExhausted, auth } = useDerivWSContext();
+  const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
   const trading = useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated: !!auth.wsUrl, onAuthWSFailed: logout });
