@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type {
   ContractMode,
   TradeType,
@@ -29,7 +28,7 @@ interface TradeControlsProps {
   durationLimits: DurationLimits;
   proposal: ProposalInfo | null;
   isProposalLoading: boolean;
-  onBuy: () => void;
+  onBuy: (mode?: ContractMode) => Promise<void>;
   isBuying: boolean;
   buyResult: BuyResult | null;
   buyError: string | null;
@@ -105,32 +104,24 @@ export function TradeControls({
       toast.success('Contract Purchased', {
         description: `Buy price: ${buyResult.buyPrice.toFixed(2)} USD | Payout: ${buyResult.payout.toFixed(2)} USD | Balance: ${buyResult.balanceAfter.toFixed(2)} USD`,
       });
+      window.dispatchEvent(new CustomEvent('marketeye:refresh-accounts'));
       onClearBuyResult();
     }
   }, [buyResult, onClearBuyResult]);
 
   const modeOptions = CONTRACT_MODE_OPTIONS[tradeType];
+  const canTrade = !!isAuthenticated && isConnected && !isBuying;
+  const buyLabel = !isAuthenticated ? 'Log in to trade' : isBuying ? 'Purchasing...' : 'Buy';
 
   return (
     <div className="space-y-2 sm:space-y-4">
-      <ToggleGroup
-        type="single"
-        value={contractMode}
-        onValueChange={value => {
-          if (value) onContractModeChange(value as ContractMode);
-        }}
-        className="w-full gap-0 rounded-full bg-muted p-1"
-      >
-        {modeOptions.map(opt => (
-          <ToggleGroupItem
-            key={opt.value}
-            value={opt.value}
-            className="flex-1 rounded-full text-sm font-medium text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:font-bold data-[state=on]:shadow-sm hover:text-foreground"
-          >
-            {opt.label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+      <div className="rounded-xl border border-border bg-muted/20 px-3 py-2">
+        <p className="text-xs text-muted-foreground">Selected contract</p>
+        <p className="text-sm font-bold">
+          {modeOptions.find(opt => opt.value === contractMode)?.label ?? 'Contract'}
+        </p>
+        <p className="text-xs text-muted-foreground">Choose by clicking a buy button below</p>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
@@ -198,19 +189,22 @@ export function TradeControls({
         )}
       </div>
 
-      {/* Buy button — fixed above footer on mobile, inline on desktop */}
       <div className="max-lg:fixed max-lg:bottom-[calc(env(safe-area-inset-bottom)+2.5rem)] max-lg:left-3 max-lg:right-3 lg:static">
-        <Button
-          className="w-full h-10 rounded-full px-6 sm:h-11 sm:px-8"
-          disabled={!isConnected || !proposal || isBuying}
-          onClick={onBuy}
-        >
-          {isBuying
-            ? 'Purchasing...'
-            : proposal
-              ? `Buy @ ${proposal.askPrice.toFixed(2)} USD`
-              : 'Buy Contract'}
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+          {modeOptions.map((opt, index) => (
+            <Button
+              key={opt.value}
+              className={`h-12 rounded-full px-6 sm:h-11 sm:px-8 font-bold ${index === 1 ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' : ''}`}
+              disabled={!canTrade}
+              onClick={() => {
+                onContractModeChange(opt.value);
+                void onBuy(opt.value);
+              }}
+            >
+              {buyLabel === 'Buy' ? `Buy ${opt.label}` : buyLabel}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {isAuthenticated && (
