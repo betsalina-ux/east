@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { EndTimePicker } from '@/components/custom/end-time-picker';
 import type { DerivWS, ActiveSymbol, ProposalInfo, BuyResult } from '@deriv/core';
 import type { Direction, DurationSelectUnit, DurationOption } from '../lib/types';
@@ -33,13 +32,11 @@ interface TradeControlsProps {
   ws: DerivWS | null;
   activeSymbol: ActiveSymbol | null;
   proposal: ProposalInfo | null;
-
-  onBuy: () => void;
+  onBuy: (direction?: Direction) => Promise<void>;
   isBuying: boolean;
   buyResult: BuyResult | null;
   buyError: string | null;
   onClearBuyResult: () => void;
-  /** Whether the user is authenticated — shows the View your positions link when true. */
   isAuthenticated?: boolean;
 }
 
@@ -88,7 +85,7 @@ export function TradeControls({
   }, [buyResult, onClearBuyResult]);
 
   const activeOption = durationOptions.find(o => o.unit === durationUnit);
-  const canTrade = !!isAuthenticated && isConnected && !!proposal && !isBuying;
+  const canTrade = !!isAuthenticated && isConnected && !!activeSymbol && !isBuying;
 
   const endTimeOption = durationOptions.find(o => o.unit === 'end-time');
   const { endTimeMinDate, endTimeMaxDate } = useMemo(() => {
@@ -102,32 +99,18 @@ export function TradeControls({
     };
   }, [endTimeOption]);
 
+  const buyLabel = !isAuthenticated ? 'Log in to trade' : isBuying ? 'Purchasing...' : 'Buy';
+
   return (
     <div className="w-full space-y-2 lg:max-w-[400px] lg:space-y-4">
-      {/* Rise / Fall direction segmented control */}
-      <ToggleGroup
-        type="single"
-        value={direction}
-        onValueChange={(value) => {
-          if (value === 'CALL' || value === 'PUT') onDirectionChange(value);
-        }}
-        className="w-full gap-0 rounded-full bg-muted p-1"
-      >
-        <ToggleGroupItem
-          value="CALL"
-          className="flex-1 rounded-full text-sm font-medium text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-green-600 data-[state=on]:font-bold data-[state=on]:shadow-sm hover:text-foreground"
-        >
-          Rise
-        </ToggleGroupItem>
-        <ToggleGroupItem
-          value="PUT"
-          className="flex-1 rounded-full text-sm font-medium text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-destructive data-[state=on]:font-bold data-[state=on]:shadow-sm hover:text-foreground"
-        >
-          Fall
-        </ToggleGroupItem>
-      </ToggleGroup>
+      <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-3 py-2">
+        <div>
+          <p className="text-xs text-muted-foreground">Selected contract</p>
+          <p className="text-sm font-bold">{direction === 'CALL' ? 'Rise' : 'Fall'}</p>
+        </div>
+        <p className="text-xs text-muted-foreground">Choose by clicking a buy button below</p>
+      </div>
 
-      {/* Allow equals */}
       <div className="flex items-center justify-between">
         <Label htmlFor="allow-equals" className="text-sm cursor-pointer">Allow equals</Label>
         <Switch
@@ -137,7 +120,6 @@ export function TradeControls({
         />
       </div>
 
-      {/* Stake */}
       <div className="space-y-1.5">
         <Label htmlFor="stake" className="text-xs text-muted-foreground">Stake</Label>
         <Input
@@ -154,7 +136,6 @@ export function TradeControls({
         />
       </div>
 
-      {/* Duration */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Duration</Label>
         <Select
@@ -203,32 +184,42 @@ export function TradeControls({
         )}
       </div>
 
-      {/* Buy button — inline on desktop, fixed above footer on mobile */}
+      {proposal && (
+        <div className="rounded-lg border border-border p-3 bg-muted/20 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Payout</span>
+            <span className="font-bold">{proposal.payout.toFixed(2)} USD</span>
+          </div>
+        </div>
+      )}
+
       <div className="max-lg:fixed max-lg:bottom-[calc(env(safe-area-inset-bottom)+3.2rem)] max-lg:left-3 max-lg:right-3 lg:static">
-        <Button
-          className="w-full rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          size="lg"
-          disabled={!canTrade}
-          onClick={onBuy}
-        >
-          {!isAuthenticated ? (
-            'Log in to trade'
-          ) : isBuying ? (
-            'Purchasing...'
-          ) : (
-            <span className="flex flex-col items-center leading-tight gap-0.5">
-              <span>Buy</span>
-              {proposal && (
-                <span className="text-xs font-normal opacity-90">
-                  Payout {proposal.payout.toFixed(2)} USD
-                </span>
-              )}
-            </span>
-          )}
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            className="h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+            size="lg"
+            disabled={!canTrade}
+            onClick={() => {
+              onDirectionChange('CALL');
+              void onBuy('CALL');
+            }}
+          >
+            {buyLabel === 'Buy' ? 'Buy Rise' : buyLabel}
+          </Button>
+          <Button
+            className="h-12 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold"
+            size="lg"
+            disabled={!canTrade}
+            onClick={() => {
+              onDirectionChange('PUT');
+              void onBuy('PUT');
+            }}
+          >
+            {buyLabel === 'Buy' ? 'Buy Fall' : buyLabel}
+          </Button>
+        </div>
       </div>
 
-      {/* View your positions — shown when authenticated */}
       {isAuthenticated && (
         <Button
           asChild
