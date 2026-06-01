@@ -42,6 +42,7 @@ export interface RiseFallViewProps {
   // Connection / loading
   ws: DerivWS | null;
   isConnected: boolean;
+  isAuthorized?: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -105,6 +106,7 @@ export function RiseFallView({
   onSwitchAccount,
   ws,
   isConnected,
+  isAuthorized,
   isLoading,
   error,
   activeSymbol,
@@ -244,7 +246,7 @@ export function RiseFallView({
                     buyResult={buyResult}
                     buyError={buyError}
                     onClearBuyResult={clearBuyResult}
-                    isAuthenticated={authState === 'authenticated'}
+                    isAuthenticated={authState === 'authenticated' && !!isAuthorized}
                   />
                 </CardContent>
               </Card>
