@@ -41,7 +41,7 @@ function RiseFallTemplate() {
   const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
-  const trading = useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticated: !!auth.wsUrl, onAuthWSFailed: logout });
+  const trading = useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticated: isAuthorized, onAuthWSFailed: logout });
   const { chartData } = useSmartChartChartData(trading.ws, trading.isConnected, trading.symbols);
   const { getQuotes, subscribeQuotes, unsubscribeQuotes } = useSmartChartsApi(trading.ws);
 
@@ -97,7 +97,7 @@ function DigitsTemplate() {
   const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
-  const trading = useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated: !!auth.wsUrl, onAuthWSFailed: logout });
+  const trading = useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated: isAuthorized, onAuthWSFailed: logout });
 
   return (
     <DigitsView
