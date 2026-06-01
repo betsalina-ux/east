@@ -146,7 +146,7 @@ export function DigitsView({
         actions={<ThemeToggle />}
       />
       {/* Spacer to push content below fixed header — taller when authenticated (account bar visible) */}
-      <div className={authState === 'authenticated' ? 'h-[76px] shrink-0' : 'h-[66px] shrink-0'} />
+      <div className={authState === 'authenticated' ? 'h-[122px] shrink-0 sm:h-[76px]' : 'h-[112px] shrink-0 sm:h-[66px]'} />
 
       {/* Scrollable content area — sits between header and sticky buy bar on mobile */}
       <div className="flex w-full max-w-7xl mx-auto flex-col px-3 py-2 sm:px-4 sm:py-4 gap-2 sm:gap-3 lg:flex-none lg:overflow-visible pb-10">
