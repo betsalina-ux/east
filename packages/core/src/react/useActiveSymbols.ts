@@ -119,7 +119,6 @@ export function useActiveSymbols(
         setIsLoading(true);
         const response = await ws!.send<{ active_symbols: RawActiveSymbol[] }>({
           active_symbols: 'full',
-          contract_type: contractTypes,
         });
         if (disposed) return;
 
