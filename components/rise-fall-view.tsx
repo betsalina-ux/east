@@ -175,7 +175,7 @@ export function RiseFallView({
         actions={<ThemeToggle />}
       />
       {/* Spacer to push content below fixed header — taller when authenticated (account bar visible) */}
-      <div className={authState === 'authenticated' ? 'h-[76px] shrink-0' : 'h-[66px] shrink-0'} />
+      <div className={authState === 'authenticated' ? 'h-[122px] shrink-0 sm:h-[76px]' : 'h-[112px] shrink-0 sm:h-[66px]'} />
 
       {/*
        * Content area.
