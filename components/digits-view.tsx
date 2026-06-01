@@ -39,6 +39,7 @@ export interface DigitsViewProps {
 
   // Connection / loading
   isConnected: boolean;
+  isAuthorized?: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -65,7 +66,7 @@ export interface DigitsViewProps {
   durationLimits: DurationLimits;
   proposal: ProposalInfo | null;
   isProposalLoading: boolean;
-  buyContract: () => Promise<void>;
+  buyContract: (mode?: ContractMode) => Promise<void>;
   isBuying: boolean;
   buyResult: BuyResult | null;
   buyError: string | null;
@@ -84,6 +85,7 @@ export function DigitsView({
   onLogout,
   onSwitchAccount,
   isConnected,
+  isAuthorized,
   isLoading,
   error,
   symbols,
@@ -224,7 +226,7 @@ export function DigitsView({
                         buyResult={buyResult}
                         buyError={buyError}
                         onClearBuyResult={clearBuyResult}
-                        isAuthenticated={authState === 'authenticated'}
+                        isAuthenticated={authState === 'authenticated' && !!isAuthorized}
                       />
                     </div>
                   </div>
