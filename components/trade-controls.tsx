@@ -82,11 +82,13 @@ export function TradeControls({
       toast.success('Contract Purchased', {
         description: `Buy price: ${buyResult.buyPrice.toFixed(2)} USD | Payout: ${buyResult.payout.toFixed(2)} USD | Balance: ${buyResult.balanceAfter.toFixed(2)} USD`,
       });
+      window.dispatchEvent(new CustomEvent('marketeye:refresh-accounts'));
       onClearBuyResult();
     }
   }, [buyResult, onClearBuyResult]);
 
   const activeOption = durationOptions.find(o => o.unit === durationUnit);
+  const canTrade = !!isAuthenticated && isConnected && !!proposal && !isBuying;
 
   const endTimeOption = durationOptions.find(o => o.unit === 'end-time');
   const { endTimeMinDate, endTimeMaxDate } = useMemo(() => {
@@ -206,10 +208,12 @@ export function TradeControls({
         <Button
           className="w-full rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
           size="lg"
-          disabled={!isConnected || !proposal || isBuying}
+          disabled={!canTrade}
           onClick={onBuy}
         >
-          {isBuying ? (
+          {!isAuthenticated ? (
+            'Log in to trade'
+          ) : isBuying ? (
             'Purchasing...'
           ) : (
             <span className="flex flex-col items-center leading-tight gap-0.5">
