@@ -14,7 +14,7 @@ type TemplateKey = 'rise-fall' | 'digits';
 
 function TemplateTabs({ active, onChange }: { active: TemplateKey; onChange: (value: TemplateKey) => void }) {
   return (
-    <div className="fixed left-1/2 top-2 z-[60] flex -translate-x-1/2 gap-2 rounded-full border border-border/70 bg-background/95 p-1 shadow-lg backdrop-blur max-sm:top-1">
+    <div className="fixed left-4 top-[72px] z-40 flex gap-2 rounded-full border border-border/70 bg-background/95 p-1 shadow-lg backdrop-blur sm:left-1/2 sm:top-2 sm:z-[60] sm:-translate-x-1/2">
       <Button
         type="button"
         size="sm"
