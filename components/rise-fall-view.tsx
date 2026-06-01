@@ -231,7 +231,7 @@ export function RiseFallView({
               )}
             </div>
 
-            <div className={`${isStrategyPanelOpen ? 'max-lg:h-[26dvh]' : 'max-lg:h-[35dvh]'} lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] shrink-0`}>
+            <div className={`${isStrategyPanelOpen ? 'max-lg:h-[31dvh]' : 'max-lg:h-[45dvh]'} lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] shrink-0`}>
               {chartData && activeSymbol?.underlying_symbol ? (
                 <RiseFallChart
                   symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
