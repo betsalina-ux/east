@@ -12,10 +12,10 @@ import type {
 } from '@deriv/core';
 import { useBaseTrading } from '@/hooks/use-base-trading';
 import type { UseBaseTradingParams } from '@/hooks/use-base-trading';
-import type { Direction, DurationSelectUnit, DurationOption, OpenPosition, ClosedPosition } from '../lib/types';
+import type { Direction, UpDownContractType, DurationSelectUnit, DurationOption, OpenPosition, ClosedPosition } from '../lib/types';
 import { getDurationOptions, computeEndTimeEpoch } from '@/lib/duration-utils';
 
-const CONTRACT_TYPES = ['CALL', 'PUT'];
+const CONTRACT_TYPES = ['CALL', 'PUT', 'CALLE', 'PUTE', 'ONETOUCH', 'NOTOUCH'];
 
 interface UseRiseFallTradingReturn {
   ws: DerivWS | null;
@@ -28,10 +28,14 @@ interface UseRiseFallTradingReturn {
   currentTick: Tick | null;
   prices: number[];
   pipSize: number;
+  contractType: UpDownContractType;
+  setContractType: (value: UpDownContractType) => void;
   direction: Direction;
   setDirection: (direction: Direction) => void;
   allowEquals: boolean;
   setAllowEquals: (value: boolean) => void;
+  barrier: string;
+  setBarrier: (value: string) => void;
   stake: string;
   setStake: (value: string) => void;
   duration: number;
@@ -80,8 +84,10 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     clearSellError,
   } = useBaseTrading({ ws, isConnected, isExhausted, isAuthenticated, onAuthWSFailed, contractTypes: CONTRACT_TYPES });
 
+  const [contractType, setContractType] = useState<UpDownContractType>('rise-fall');
   const [direction, setDirection] = useState<Direction>('CALL');
   const [allowEquals, setAllowEquals] = useState<boolean>(false);
+  const [barrier, setBarrier] = useState<string>('0.1');
   const [stake, setStake] = useState<string>('10');
   const [duration, setDuration] = useState<number>(1);
   const [durationUnit, setDurationUnitRaw] = useState<DurationSelectUnit>('t');
@@ -120,6 +126,16 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
   }, [durationOptions]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  useEffect(() => {
+    if (contractType === 'touch-no-touch') {
+      setDirection(prev => (prev === 'NOTOUCH' ? 'NOTOUCH' : 'ONETOUCH'));
+      setAllowEquals(false);
+    } else {
+      setDirection(prev => (prev === 'PUT' ? 'PUT' : 'CALL'));
+      if (contractType !== 'rise-fall') setAllowEquals(false);
+    }
+  }, [contractType]);
+
   const setDurationUnit = useCallback((unit: DurationSelectUnit) => {
     setDurationUnitRaw(unit);
     const opt = durationOptions.find(o => o.unit === unit);
@@ -135,12 +151,16 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     const stakeNum = parseFloat(stake);
     if (!stakeNum || stakeNum <= 0) return null;
 
+    const barrierNum = parseFloat(barrier);
+    if (contractType !== 'rise-fall' && Number.isNaN(barrierNum)) return null;
+
     const base = {
-      contractType: allowEquals ? `${direction}E` : direction,
+      contractType: contractType === 'rise-fall' && allowEquals ? `${direction}E` : direction,
       symbol: activeSymbol.underlying_symbol,
       amount: stakeNum,
       basis: 'stake' as const,
       currency: 'USD',
+      ...(contractType !== 'rise-fall' ? { barrier: barrierNum } : {}),
     };
 
     if (durationUnit === 'end-time') {
@@ -157,7 +177,7 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     }
 
     return { ...base, duration, durationUnit };
-  }, [activeSymbol, direction, allowEquals, stake, duration, durationUnit, endDate, endTime, isBuying, durationOptions, durationOptionsSymbol]);
+  }, [activeSymbol, direction, contractType, allowEquals, barrier, stake, duration, durationUnit, endDate, endTime, isBuying, durationOptions, durationOptionsSymbol]);
 
   // Do not keep a live proposal subscription here. The new Options WS validates
   // proposal streams strictly and was showing: "Properties not allowed: symbol".
@@ -170,12 +190,16 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     const stakeNum = parseFloat(stake);
     if (!stakeNum || stakeNum <= 0) return null;
 
+    const barrierNum = parseFloat(barrier);
+    if (contractType !== 'rise-fall' && Number.isNaN(barrierNum)) return null;
+
     const base = {
-      contractType: allowEquals ? `${nextDirection}E` : nextDirection,
+      contractType: contractType === 'rise-fall' && allowEquals ? `${nextDirection}E` : nextDirection,
       symbol: activeSymbol.underlying_symbol,
       amount: stakeNum,
       basis: 'stake' as const,
       currency: 'USD',
+      ...(contractType !== 'rise-fall' ? { barrier: barrierNum } : {}),
     };
 
     if (durationUnit === 'end-time') {
@@ -192,7 +216,7 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     }
 
     return { ...base, duration, durationUnit };
-  }, [activeSymbol, allowEquals, stake, duration, durationUnit, endDate, endTime, durationOptions, durationOptionsSymbol]);
+  }, [activeSymbol, contractType, allowEquals, barrier, stake, duration, durationUnit, endDate, endTime, durationOptions, durationOptionsSymbol]);
 
   const buyContract = useCallback(async (nextDirection?: Direction) => {
     const directionToBuy = nextDirection ?? direction;
@@ -212,10 +236,14 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     currentTick,
     prices,
     pipSize,
+    contractType,
+    setContractType,
     direction,
     setDirection,
     allowEquals,
     setAllowEquals,
+    barrier,
+    setBarrier,
     stake,
     setStake,
     duration,
