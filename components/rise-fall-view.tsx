@@ -18,7 +18,7 @@ import type {
   BuyResult,
   DerivWS,
 } from '@deriv/core';
-import type { Direction, DurationSelectUnit, DurationOption } from '../lib/types';
+import type { Direction, UpDownContractType, DurationSelectUnit, DurationOption } from '../lib/types';
 import type { UseSmartChartsApiReturn } from '@/hooks/use-smartcharts-api';
 import type { SmartChartChartData } from '@/hooks/use-smartchart-chart-data';
 import type { OpenPosition } from '../lib/types';
@@ -52,10 +52,14 @@ export interface RiseFallViewProps {
   selectSymbol: (symbol: string) => void;
 
   // Trade controls
+  contractType: UpDownContractType;
+  setContractType: (value: UpDownContractType) => void;
   direction: Direction;
   setDirection: (direction: Direction) => void;
   allowEquals: boolean;
   setAllowEquals: (value: boolean) => void;
+  barrier: string;
+  setBarrier: (value: string) => void;
   stake: string;
   setStake: (value: string) => void;
   duration: number;
@@ -112,10 +116,14 @@ export function RiseFallView({
   error,
   activeSymbol,
   selectSymbol,
+  contractType,
+  setContractType,
   direction,
   setDirection,
   allowEquals,
   setAllowEquals,
+  barrier,
+  setBarrier,
   stake,
   setStake,
   duration,
@@ -265,10 +273,14 @@ export function RiseFallView({
               <Card className="max-lg:h-full max-lg:overflow-y-auto lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
                 <CardContent className="pt-4 pb-32">
                   <TradeControls
+                    contractType={contractType}
+                    onContractTypeChange={setContractType}
                     direction={direction}
                     onDirectionChange={setDirection}
                     allowEquals={allowEquals}
                     onAllowEqualsChange={setAllowEquals}
+                    barrier={barrier}
+                    onBarrierChange={setBarrier}
                     isConnected={isConnected}
                     stake={stake}
                     onStakeChange={setStake}
