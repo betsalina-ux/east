@@ -258,7 +258,7 @@ export function RiseFallView({
           </div>
 
           {/* Column 2: Trade controls in a Card */}
-          <div className="max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:overscroll-contain max-lg:px-3 max-lg:border-t max-lg:border-border max-lg:pt-3 max-lg:pb-36 lg:pt-0 flex flex-col gap-3">
+          <div className="max-lg:px-3 max-lg:border-t max-lg:border-border max-lg:pt-3 max-lg:pb-36 lg:pt-0 flex flex-col gap-3">
             {isLoading ? (
               <Skeleton className="lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] max-lg:h-48 w-full rounded-xl" />
             ) : (
