@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/custom/footer';
 import { Header } from '@/components/custom/header';
@@ -116,6 +117,8 @@ export function DigitsView({
   logoSrc,
   appName,
 }: DigitsViewProps) {
+  const [isStrategyPanelOpen, setIsStrategyPanelOpen] = useState(false);
+
   if (error) {
     return (
       <main className="flex flex-col bg-background items-center justify-center px-4 min-h-dvh">
@@ -169,6 +172,47 @@ export function DigitsView({
                 options={DIGIT_TRADE_TYPE_OPTIONS}
                 onValueChange={setTradeType}
               />
+            </div>
+
+            <div className="shrink-0 rounded-2xl border border-border bg-card shadow-sm">
+              <button
+                type="button"
+                onClick={() => setIsStrategyPanelOpen(value => !value)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left"
+              >
+                <div>
+                  <p className="text-sm font-bold">Strategy Panel</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isStrategyPanelOpen ? 'ON — PIS signals visible' : 'OFF — tap to open'}
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${isStrategyPanelOpen ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                  {isStrategyPanelOpen ? 'ON' : 'OFF'}
+                </span>
+              </button>
+
+              {isStrategyPanelOpen && (
+                <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3 text-sm">
+                  <div className="space-y-3">
+                    <div className="rounded-xl bg-muted/40 p-3">
+                      <p className="text-xs text-muted-foreground">Market</p>
+                      <p className="font-bold">Even/Odd Digits</p>
+                    </div>
+                    <div className="rounded-xl bg-muted/40 p-3">
+                      <p className="text-xs text-muted-foreground">Strategy</p>
+                      <p className="font-bold">PIS — Parity Imbalance Strategy</p>
+                    </div>
+                    <div className="rounded-xl bg-muted/40 p-3">
+                      <p className="text-xs text-muted-foreground">Signal</p>
+                      <p className="font-bold">WAIT</p>
+                    </div>
+                    <div className="rounded-xl bg-muted/40 p-3">
+                      <p className="text-xs text-muted-foreground">Data source</p>
+                      <p className="font-bold">MarketEye Deriv API / WebSocket</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <Card className="shrink-0 border shadow-sm mb-12">
