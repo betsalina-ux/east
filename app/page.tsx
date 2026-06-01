@@ -10,7 +10,7 @@ import { RiseFallView } from '@/components/rise-fall-view';
 import { DigitsView } from '@/components/digits-view';
 import { Button } from '@/components/ui/button';
 
-type TemplateKey = 'rise-fall' | 'digits';
+type TemplateKey = 'up-down' | 'digits';
 
 function TemplateTabs({ active, onChange }: { active: TemplateKey; onChange: (value: TemplateKey) => void }) {
   return (
@@ -18,11 +18,11 @@ function TemplateTabs({ active, onChange }: { active: TemplateKey; onChange: (va
       <Button
         type="button"
         size="sm"
-        variant={active === 'rise-fall' ? 'default' : 'ghost'}
+        variant={active === 'up-down' ? 'default' : 'ghost'}
         className="rounded-full px-4 font-bold"
-        onClick={() => onChange('rise-fall')}
+        onClick={() => onChange('up-down')}
       >
-        Rise/Fall
+        Up/Down
       </Button>
       <Button
         type="button"
@@ -62,10 +62,14 @@ function RiseFallTemplate() {
       error={trading.error}
       activeSymbol={trading.activeSymbol}
       selectSymbol={trading.selectSymbol}
+      contractType={trading.contractType}
+      setContractType={trading.setContractType}
       direction={trading.direction}
       setDirection={trading.setDirection}
       allowEquals={trading.allowEquals}
       setAllowEquals={trading.setAllowEquals}
+      barrier={trading.barrier}
+      setBarrier={trading.setBarrier}
       stake={trading.stake}
       setStake={trading.setStake}
       duration={trading.duration}
@@ -144,12 +148,12 @@ function DigitsTemplate() {
 }
 
 export default function MarketEyePage() {
-  const [template, setTemplate] = useState<TemplateKey>('rise-fall');
+  const [template, setTemplate] = useState<TemplateKey>('up-down');
 
   return (
     <>
       <TemplateTabs active={template} onChange={setTemplate} />
-      {template === 'rise-fall' ? <RiseFallTemplate /> : <DigitsTemplate />}
+      {template === 'up-down' ? <RiseFallTemplate /> : <DigitsTemplate />}
     </>
   );
 }
