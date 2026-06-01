@@ -20,9 +20,10 @@ export function DerivWSProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
-  const { ws, isConnected, isExhausted } = useDerivWS({
-    accountId: auth.activeAccountId ?? undefined,
-  });
+ const { ws, isConnected, isExhausted } = useDerivWS({
+  url: auth.wsUrl,
+  accountId: auth.activeAccountId ?? undefined,
+});
 
   useEffect(() => {
     let cancelled = false;
