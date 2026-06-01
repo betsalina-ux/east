@@ -17,13 +17,13 @@ export function useProposal(
   const unsubRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // Forget previous proposal subscription
     if (unsubRef.current) {
       unsubRef.current();
       unsubRef.current = null;
     }
 
     if (!ws || !isConnected || !params || params.amount <= 0) {
+      setProposal(null);
       return;
     }
 
@@ -35,7 +35,7 @@ export function useProposal(
       basis: params.basis,
       contract_type: params.contractType,
       currency: params.currency,
-      symbol: params.symbol,
+      underlying_symbol: params.symbol,
     };
 
     if (params.dateExpiry !== undefined) {
@@ -55,9 +55,9 @@ export function useProposal(
       if (resp.proposal) {
         setProposal({
           id: resp.proposal.id,
-          askPrice: resp.proposal.ask_price,
-          payout: resp.proposal.payout,
-          longcode: resp.proposal.longcode,
+          askPrice: Number(resp.proposal.ask_price ?? 0),
+          payout: Number(resp.proposal.payout ?? 0),
+          longcode: resp.proposal.longcode ?? '',
           minStake: parseFloat(resp.proposal.validation_params?.stake?.min ?? '0'),
           maxPayout: parseFloat(resp.proposal.validation_params?.payout?.max ?? '0'),
         });
@@ -80,7 +80,6 @@ export function useProposal(
         unsubRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally using individual param fields to avoid re-subscribing on object reference changes
   }, [ws, isConnected, params?.contractType, params?.symbol, params?.amount, params?.duration, params?.durationUnit, params?.barrier, params?.basis, params?.currency, params?.dateExpiry]);
 
   return { proposal };
