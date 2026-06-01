@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useDerivWS, getAuthInfo } from '@deriv/core';
+import { useDerivWS } from '@deriv/core';
 import { useAuth } from '@/hooks/use-auth';
 import type { DerivWS } from '@deriv/core';
 import type { UseAuthReturn } from '@/hooks/use-auth';
@@ -20,55 +20,25 @@ export function DerivWSProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
- const { ws, isConnected, isExhausted } = useDerivWS({
-  url: auth.wsUrl,
-  accountId: auth.activeAccountId ?? undefined,
-});
+  const { ws, isConnected, isExhausted } = useDerivWS({
+    url: auth.wsUrl,
+    accountId: auth.activeAccountId ?? undefined,
+  });
 
   useEffect(() => {
-    let cancelled = false;
+    // IMPORTANT:
+    // auth.wsUrl is already an authenticated Deriv OTP WebSocket URL.
+    // Do NOT send { authorize: token } on this connection. The Options WS rejects
+    // that request with: "Input validation failed: authorize".
+    const ready =
+      auth.authState === 'authenticated' &&
+      !!auth.wsUrl &&
+      !!auth.activeAccountId &&
+      !!ws &&
+      isConnected;
 
-    async function authorizeSocket() {
-      setIsAuthorized(false);
-
-      if (!ws || !isConnected || auth.authState !== 'authenticated') return;
-
-      const authInfo = getAuthInfo() as any;
-
-      const token =
-        authInfo?.access_token ||
-        authInfo?.token ||
-        authInfo?.oauth_token ||
-        authInfo?.accounts?.[0]?.token;
-
-      if (!token) {
-        console.error('Authorize failed: token missing from getAuthInfo()', authInfo);
-        return;
-      }
-
-      try {
-        const response = await ws.send({
-          authorize: token,
-        });
-
-        if (!cancelled) {
-          console.log('Authorize success:', response);
-          setIsAuthorized(true);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Authorize failed:', err);
-          setIsAuthorized(false);
-        }
-      }
-    }
-
-    authorizeSocket();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ws, isConnected, auth.authState, auth.activeAccountId]);
+    setIsAuthorized(ready);
+  }, [auth.authState, auth.wsUrl, auth.activeAccountId, ws, isConnected]);
 
   return (
     <DerivWSContext.Provider value={{ ws, isConnected, isExhausted, isAuthorized, auth }}>
