@@ -89,6 +89,7 @@ function RiseFallTemplate() {
       getQuotes={getQuotes}
       subscribeQuotes={subscribeQuotes}
       unsubscribeQuotes={unsubscribeQuotes}
+      isAuthorized={isAuthorized}
     />
   );
 }
