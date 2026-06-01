@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useProposal, useBuy } from '@deriv/core';
+import { useBuy } from '@deriv/core';
 import type {
   DerivWS,
   ActiveSymbol,
@@ -44,7 +44,7 @@ interface UseRiseFallTradingReturn {
   endTime: string;
   setEndTime: (time: string) => void;
   proposal: ProposalInfo | null;
-  buyContract: () => Promise<void>;
+  buyContract: (direction?: Direction) => Promise<void>;
   isBuying: boolean;
   buyResult: BuyResult | null;
   buyError: string | null;
@@ -126,7 +126,7 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     if (opt && unit !== 'end-time') setDuration(opt.min);
   }, [durationOptions]);
 
-  const { buyContract: buyWithProposal, isBuying, buyResult, buyError, clearBuyResult } =
+  const { buyContract: buyWithProposal, buyContractFromParams, isBuying, buyResult, buyError, clearBuyResult } =
     useBuy(tradingWs, tradingIsConnected);
 
   const proposalParams: ProposalParams | null = useMemo(() => {
@@ -159,11 +159,47 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     return { ...base, duration, durationUnit };
   }, [activeSymbol, direction, allowEquals, stake, duration, durationUnit, endDate, endTime, isBuying, durationOptions, durationOptionsSymbol]);
 
-  const { proposal } = useProposal(tradingWs, tradingIsConnected, proposalParams);
+  // Do not keep a live proposal subscription here. The new Options WS validates
+  // proposal streams strictly and was showing: "Properties not allowed: symbol".
+  // We build the exact contract params and buy on button click instead.
+  const proposal = null;
 
-  const buyContract = useCallback(async () => {
-    if (proposal) await buyWithProposal(proposal);
-  }, [proposal, buyWithProposal]);
+  const buildParamsForDirection = useCallback((nextDirection: Direction): ProposalParams | null => {
+    if (!activeSymbol || !durationOptions.length) return null;
+    if (durationOptionsSymbol !== activeSymbol.underlying_symbol) return null;
+    const stakeNum = parseFloat(stake);
+    if (!stakeNum || stakeNum <= 0) return null;
+
+    const base = {
+      contractType: allowEquals ? `${nextDirection}E` : nextDirection,
+      symbol: activeSymbol.underlying_symbol,
+      amount: stakeNum,
+      basis: 'stake' as const,
+      currency: 'USD',
+    };
+
+    if (durationUnit === 'end-time') {
+      const dateExpiry = computeEndTimeEpoch(endDate, endTime);
+      if (!dateExpiry) return null;
+      return { ...base, duration: 0, durationUnit: 'd', dateExpiry };
+    }
+
+    const opt = durationOptions.find(o => o.unit === durationUnit);
+    if (!opt || duration < opt.min || duration > opt.max) return null;
+
+    if (durationUnit === 'h') {
+      return { ...base, duration: duration * 60, durationUnit: 'm' };
+    }
+
+    return { ...base, duration, durationUnit };
+  }, [activeSymbol, allowEquals, stake, duration, durationUnit, endDate, endTime, durationOptions, durationOptionsSymbol]);
+
+  const buyContract = useCallback(async (nextDirection?: Direction) => {
+    const directionToBuy = nextDirection ?? direction;
+    setDirection(directionToBuy);
+    const params = buildParamsForDirection(directionToBuy);
+    if (params) await buyContractFromParams(params);
+  }, [direction, buildParamsForDirection, buyContractFromParams]);
 
   return {
     ws: tradingWs,
