@@ -67,7 +67,7 @@ export interface RiseFallViewProps {
   endTime: string;
   setEndTime: (time: string) => void;
   proposal: ProposalInfo | null;
-  buyContract: () => Promise<void>;
+  buyContract: (direction?: Direction) => Promise<void>;
   isBuying: boolean;
   buyResult: BuyResult | null;
   buyError: string | null;
