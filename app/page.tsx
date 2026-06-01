@@ -1,95 +1,154 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useDerivWS, getAuthInfo } from '@deriv/core';
-import { useAuth } from '@/hooks/use-auth';
-import type { DerivWS } from '@deriv/core';
-import type { UseAuthReturn } from '@/hooks/use-auth';
+import { useState } from 'react';
+import { useSmartChartsApi } from '@/hooks/use-smartcharts-api';
+import { useSmartChartChartData } from '@/hooks/use-smartchart-chart-data';
+import { useRiseFallTrading } from '@/hooks/use-rise-fall-trading';
+import { useDigitsTrading } from '@/hooks/use-digits-trading';
+import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
+import { RiseFallView } from '@/components/rise-fall-view';
+import { DigitsView } from '@/components/digits-view';
+import { Button } from '@/components/ui/button';
 
-interface DerivWSContextValue {
-  ws: DerivWS | null;
-  isConnected: boolean;
-  isExhausted: boolean;
-  isAuthorized: boolean;
-  auth: UseAuthReturn;
-}
+type TemplateKey = 'rise-fall' | 'digits';
 
-const DerivWSContext = createContext<DerivWSContextValue | null>(null);
-
-export function DerivWSProvider({ children }: { children: React.ReactNode }) {
-  const auth = useAuth();
-  const [isAuthorized, setIsAuthorized] = useState(false);
-
-  const { ws, isConnected, isExhausted } = useDerivWS({
-    url: auth.wsUrl,
-    accountId: auth.activeAccountId ?? undefined,
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function authorizeSocket() {
-      setIsAuthorized(false);
-
-      if (!ws || !isConnected || auth.authState !== 'authenticated') return;
-
-      // When useAuth gives us an OTP WebSocket URL, the socket is already tied to
-      // the selected Deriv account. Mark it authorized so trading hooks can run.
-      if (auth.wsUrl) {
-        setIsAuthorized(true);
-        return;
-      }
-
-      const authInfo = getAuthInfo() as any;
-
-      const token =
-        authInfo?.access_token ||
-        authInfo?.token ||
-        authInfo?.oauth_token ||
-        authInfo?.accounts?.[0]?.token;
-
-      if (!token) {
-        console.error('Authorize failed: token missing from getAuthInfo()', authInfo);
-        return;
-      }
-
-      try {
-        const response = await ws.send({
-          authorize: token,
-        });
-
-        if (!cancelled) {
-          console.log('Authorize success:', response);
-          setIsAuthorized(true);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Authorize failed:', err);
-          setIsAuthorized(false);
-        }
-      }
-    }
-
-    authorizeSocket();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ws, isConnected, auth.authState, auth.activeAccountId, auth.wsUrl]);
-
+function TemplateTabs({ active, onChange }: { active: TemplateKey; onChange: (value: TemplateKey) => void }) {
   return (
-    <DerivWSContext.Provider value={{ ws, isConnected, isExhausted, isAuthorized, auth }}>
-      {children}
-    </DerivWSContext.Provider>
+    <div className="fixed left-1/2 top-2 z-[60] flex -translate-x-1/2 gap-2 rounded-full border border-border/70 bg-background/95 p-1 shadow-lg backdrop-blur max-sm:top-1">
+      <Button
+        type="button"
+        size="sm"
+        variant={active === 'rise-fall' ? 'default' : 'ghost'}
+        className="rounded-full px-4 font-bold"
+        onClick={() => onChange('rise-fall')}
+      >
+        Rise/Fall
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={active === 'digits' ? 'default' : 'ghost'}
+        className="rounded-full px-4 font-bold"
+        onClick={() => onChange('digits')}
+      >
+        Digits Market
+      </Button>
+    </div>
   );
 }
 
-export function useDerivWSContext(): DerivWSContextValue {
-  const ctx = useContext(DerivWSContext);
+function RiseFallTemplate() {
+  const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
+  const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
-  if (!ctx) {
-    throw new Error('useDerivWSContext must be used within a DerivWSProvider');
-  }
+  const trading = useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticated: isAuthorized, onAuthWSFailed: logout });
+  const { chartData } = useSmartChartChartData(trading.ws, trading.isConnected, trading.symbols);
+  const { getQuotes, subscribeQuotes, unsubscribeQuotes } = useSmartChartsApi(trading.ws);
 
-  return ctx;
+  return (
+    <RiseFallView
+      authState={authState}
+      accounts={accounts}
+      activeAccount={activeAccount}
+      onLogin={login}
+      onSignUp={signUp}
+      onLogout={logout}
+      onSwitchAccount={switchAccount}
+      logoSrc="/logo.png"
+      ws={trading.ws}
+      isConnected={trading.isConnected}
+      isAuthorized={isAuthorized}
+      isLoading={trading.isLoading}
+      error={trading.error}
+      activeSymbol={trading.activeSymbol}
+      selectSymbol={trading.selectSymbol}
+      direction={trading.direction}
+      setDirection={trading.setDirection}
+      allowEquals={trading.allowEquals}
+      setAllowEquals={trading.setAllowEquals}
+      stake={trading.stake}
+      setStake={trading.setStake}
+      duration={trading.duration}
+      setDuration={trading.setDuration}
+      durationOptions={trading.durationOptions}
+      durationUnit={trading.durationUnit}
+      setDurationUnit={trading.setDurationUnit}
+      endDate={trading.endDate}
+      setEndDate={trading.setEndDate}
+      endTime={trading.endTime}
+      setEndTime={trading.setEndTime}
+      proposal={trading.proposal}
+      buyContract={trading.buyContract}
+      isBuying={trading.isBuying}
+      buyResult={trading.buyResult}
+      buyError={trading.buyError}
+      clearBuyResult={trading.clearBuyResult}
+      openPositions={trading.openPositions}
+      sellContract={trading.sellContract}
+      sellingId={trading.sellingId}
+      chartData={chartData}
+      getQuotes={getQuotes}
+      subscribeQuotes={subscribeQuotes}
+      unsubscribeQuotes={unsubscribeQuotes}
+    />
+  );
+}
+
+function DigitsTemplate() {
+  const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
+  const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
+
+  const trading = useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated: isAuthorized, onAuthWSFailed: logout });
+
+  return (
+    <DigitsView
+      authState={authState}
+      accounts={accounts}
+      activeAccount={activeAccount}
+      onLogin={login}
+      onSignUp={signUp}
+      onLogout={logout}
+      onSwitchAccount={switchAccount}
+      logoSrc="/logo.png"
+      isConnected={trading.isConnected}
+      isLoading={trading.isLoading}
+      error={trading.error}
+      symbols={trading.symbols}
+      activeSymbol={trading.activeSymbol}
+      selectSymbol={trading.selectSymbol}
+      currentTick={trading.currentTick}
+      lastDigit={trading.lastDigit}
+      digitStats={trading.digitStats}
+      pipSize={trading.pipSize}
+      tradeType={trading.tradeType}
+      setTradeType={trading.setTradeType}
+      contractMode={trading.contractMode}
+      setContractMode={trading.setContractMode}
+      selectedDigit={trading.selectedDigit}
+      setSelectedDigit={trading.setSelectedDigit}
+      stake={trading.stake}
+      setStake={trading.setStake}
+      duration={trading.duration}
+      setDuration={trading.setDuration}
+      durationLimits={trading.durationLimits}
+      proposal={trading.proposal}
+      isProposalLoading={trading.isProposalLoading}
+      buyContract={trading.buyContract}
+      isBuying={trading.isBuying}
+      buyResult={trading.buyResult}
+      buyError={trading.buyError}
+      clearBuyResult={trading.clearBuyResult}
+    />
+  );
+}
+
+export default function MarketEyePage() {
+  const [template, setTemplate] = useState<TemplateKey>('rise-fall');
+
+  return (
+    <>
+      <TemplateTabs active={template} onChange={setTemplate} />
+      {template === 'rise-fall' ? <RiseFallTemplate /> : <DigitsTemplate />}
+    </>
+  );
 }
