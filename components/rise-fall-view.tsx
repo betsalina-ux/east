@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useContractMarkers } from '@/hooks/use-contract-markers';
 import { TradeControls } from './trade-controls';
+import { Button } from '@/components/ui/button';
 import type {
   AuthState,
   DerivAccount,
@@ -29,6 +30,12 @@ const RiseFallChart = dynamic(() => import('./rise-fall-chart').then(m => m.Rise
     <div className="h-full w-full animate-pulse rounded-md border border-border/50 dark:border-white/[0.08] bg-muted/30" />
   ),
 });
+
+const CONTRACT_TABS: { value: UpDownContractType; label: string }[] = [
+  { value: 'rise-fall', label: 'Rise/Fall' },
+  { value: 'higher-lower', label: 'Higher/Lower' },
+  { value: 'touch-no-touch', label: 'Touch/No Touch' },
+];
 
 export interface RiseFallViewProps {
   // Auth
@@ -196,6 +203,25 @@ export function RiseFallView({
        */}
       <div className="flex w-full max-w-7xl mx-auto flex-col max-lg:px-0 max-lg:py-0 px-3 py-2 sm:px-4 sm:py-4 gap-2 sm:gap-3 max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:pb-28 lg:flex-none lg:overflow-visible">
         <div className="max-lg:flex max-lg:flex-col max-lg:min-h-0 lg:grid lg:grid-cols-[1fr_400px] lg:gap-4">
+          <div className="max-lg:px-3 lg:col-span-2">
+            <div className="rounded-xl border border-border bg-muted/20 p-1 shadow-sm">
+              <div className="grid grid-cols-3 gap-1">
+                {CONTRACT_TABS.map(tab => (
+                  <Button
+                    key={tab.value}
+                    type="button"
+                    size="sm"
+                    variant={contractType === tab.value ? 'default' : 'ghost'}
+                    className="h-auto min-h-9 rounded-lg px-2 py-2 text-[11px] font-bold leading-tight sm:text-xs"
+                    onClick={() => setContractType(tab.value)}
+                  >
+                    {tab.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Column 1: Strategy panel + Chart */}
           <div className="max-lg:shrink-0 flex flex-col gap-2 max-lg:px-3 max-lg:pb-2 pt-2 lg:py-0">
             <div className="rounded-2xl border border-border bg-card shadow-sm">
