@@ -82,6 +82,13 @@ export function runStrategy({
     cooldownRemaining,
   });
 }
+  if (strategyId === 'dds') {
+  return runDdsStrategy({
+    ticks,
+    currentCandle,
+    cooldownRemaining,
+  });
+}
 
 return {
   signal: 'WAIT',
