@@ -160,6 +160,9 @@ export function RiseFallView({
   endEpoch,
   logoSrc,
   appName,
+  currentTick,
+  prices,
+  pipSize,
 }: RiseFallViewProps) {
   const isMobile = useIsMobile();
   const [isStrategyPanelOpen, setIsStrategyPanelOpen] = useState(false);
