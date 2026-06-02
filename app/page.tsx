@@ -50,6 +50,9 @@ function RiseFallTemplate() {
       authState={authState}
       accounts={accounts}
       activeAccount={activeAccount}
+      currentTick={riseFall.currentTick}
+      prices={riseFall.prices}
+      pipSize={riseFall.pipSize}
       onLogin={login}
       onSignUp={signUp}
       onLogout={logout}
@@ -94,9 +97,7 @@ function RiseFallTemplate() {
       getQuotes={getQuotes}
       subscribeQuotes={subscribeQuotes}
       unsubscribeQuotes={unsubscribeQuotes}
-      currentTick={riseFall.currentTick}
-      prices={riseFall.prices}
-      pipSize={riseFall.pipSize}
+      
     />
   );
 }
