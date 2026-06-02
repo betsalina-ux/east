@@ -46,6 +46,9 @@ export interface RiseFallViewProps {
   onSignUp: () => Promise<void>;
   onLogout: () => void;
   onSwitchAccount: (accountId: string) => Promise<void>;
+  currentTick: Tick | null;
+  prices: number[];
+  pipSize: number;
 
   // Connection / loading
   ws: DerivWS | null;
