@@ -112,18 +112,18 @@ export function useStrategyEngine({
   }, [latestPrice, pipSize]);
 
   const result: StrategyResult = useMemo(() => {
-    const now = Date.now();
-    const cooldownRemaining = Math.max(0, COOLDOWN_MS - (now - lastSignalAt));
+  const now = Date.now();
+  const cooldownRemaining = Math.max(0, COOLDOWN_MS - (now - lastSignalAt));
 
-    return {
-      signal: 'WAIT',
-      confidence: 0,
-      reason: `Building ${strategyId} data from live MarketEye ticks. Logic will be added next.`,
-      cooldownRemaining,
-      market,
-      strategyId,
-    };
-  }, [market, strategyId, lastSignalAt]);
+  return runStrategy({
+    market,
+    strategyId,
+    ticks,
+    candles,
+    currentCandle,
+    cooldownRemaining,
+  });
+}, [market, strategyId, ticks, candles, currentCandle, lastSignalAt]);
 
   return {
     symbol,
