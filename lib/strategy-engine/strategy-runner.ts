@@ -57,12 +57,20 @@ export function runStrategy({
     };
   }
 
-  return {
-    signal: 'WAIT',
-    confidence: 0,
-    reason: `${strategyId} selected. Strategy logic will run here next.`,
+  if (strategyId === 'mts') {
+  return runMtsStrategy({
+    ticks,
+    currentCandle,
     cooldownRemaining,
-    market,
-    strategyId,
-  };
+  });
+}
+
+return {
+  signal: 'WAIT',
+  confidence: 0,
+  reason: `${strategyId} selected. Strategy logic will run here next.`,
+  cooldownRemaining,
+  market,
+  strategyId,
+};
 }
