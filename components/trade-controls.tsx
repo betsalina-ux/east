@@ -44,12 +44,6 @@ interface TradeControlsProps {
   isAuthenticated?: boolean;
 }
 
-const CONTRACT_TABS: { value: UpDownContractType; label: string }[] = [
-  { value: 'rise-fall', label: 'Rise/Fall' },
-  { value: 'higher-lower', label: 'Higher/Lower' },
-  { value: 'touch-no-touch', label: 'Touch/No Touch' },
-];
-
 function getContractCopy(contractType: UpDownContractType, direction: Direction) {
   if (contractType === 'higher-lower') {
     return {
@@ -148,23 +142,6 @@ export function TradeControls({
 
   return (
     <div className="w-full space-y-2 lg:max-w-[400px] lg:space-y-4">
-      <div className="rounded-xl border border-border bg-muted/20 p-1">
-        <div className="grid grid-cols-3 gap-1">
-          {CONTRACT_TABS.map(tab => (
-            <Button
-              key={tab.value}
-              type="button"
-              size="sm"
-              variant={contractType === tab.value ? 'default' : 'ghost'}
-              className="h-auto min-h-9 rounded-lg px-2 py-2 text-[11px] font-bold leading-tight sm:text-xs"
-              onClick={() => onContractTypeChange(tab.value)}
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-
       <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-3 py-2">
         <div>
           <p className="text-xs text-muted-foreground">Selected contract</p>
