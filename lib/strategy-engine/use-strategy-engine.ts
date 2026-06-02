@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { runStrategy } from './strategy-runner';
 import type {
   StrategyCandle,
   StrategyId,
