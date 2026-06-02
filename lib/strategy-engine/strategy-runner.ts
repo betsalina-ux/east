@@ -1,4 +1,5 @@
 import { runMtsStrategy } from './strategies/mts';
+import { runSniperRfStrategy } from './strategies/sniper-rf';
 import type {
   StrategyCandle,
   StrategyId,
@@ -60,6 +61,14 @@ export function runStrategy({
   if (strategyId === 'mts') {
   return runMtsStrategy({
     ticks,
+    currentCandle,
+    cooldownRemaining,
+  });
+}
+  if (strategyId === 'sniper-rf') {
+  return runSniperRfStrategy({
+    ticks,
+    candles,
     currentCandle,
     cooldownRemaining,
   });
