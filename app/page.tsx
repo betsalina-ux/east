@@ -50,9 +50,9 @@ function RiseFallTemplate() {
       authState={authState}
       accounts={accounts}
       activeAccount={activeAccount}
-      currentTick={riseFall.currentTick}
-      prices={riseFall.prices}
-      pipSize={riseFall.pipSize}
+      currentTick={trading.currentTick}
+      prices={trading.prices}
+      pipSize={trading.pipSize}
       onLogin={login}
       onSignUp={signUp}
       onLogout={logout}
