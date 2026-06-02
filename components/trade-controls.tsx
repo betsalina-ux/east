@@ -209,19 +209,28 @@ export function TradeControls({
         </Select>
 
         {durationUnit !== 'end-time' && (
-          <Input
-            type="number"
-            value={duration}
-            onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
-              if (!isNaN(val)) onDurationChange(val);
-            }}
-            min={activeOption?.min}
-            max={activeOption?.max}
-            step={1}
-          />
-        )}
+  <Input
+    type="number"
+    value={duration}
+    onChange={(e) => {
+      const rawValue = e.target.value;
 
+      if (rawValue === '') {
+        onDurationChange(1);
+        return;
+      }
+
+      const val = parseInt(rawValue, 10);
+
+      if (!isNaN(val)) {
+        onDurationChange(Math.max(1, val));
+      }
+    }}
+    min={1}
+    max={activeOption?.max}
+    step={1}
+  />
+)}
         {durationUnit === 'end-time' && (
           <EndTimePicker
             ws={ws}
