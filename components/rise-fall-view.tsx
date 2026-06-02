@@ -250,7 +250,7 @@ export function RiseFallView({
                     </div>
                     <div className="rounded-xl bg-muted/40 p-3">
                       <p className="text-xs text-muted-foreground">Available strategies</p>
-                      <p className="font-bold">IES / Sniper RF</p>
+                      <p className="font-bold">MTS / Sniper RF</p>
                     </div>
                     <div className="rounded-xl bg-muted/40 p-3">
                       <p className="text-xs text-muted-foreground">Signal</p>
