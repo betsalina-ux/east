@@ -248,27 +248,19 @@ export function RiseFallView({
               </button>
 
               {isStrategyPanelOpen && (
-                <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3 text-sm">
-                  <div className="space-y-3">
-                    <div className="rounded-xl bg-muted/40 p-3">
-                      <p className="text-xs text-muted-foreground">Market</p>
-                      <p className="font-bold">Rise/Fall</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/40 p-3">
-                      <p className="text-xs text-muted-foreground">Available strategies</p>
-                      <p className="font-bold">MTS / Sniper RF</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/40 p-3">
-                      <p className="text-xs text-muted-foreground">Signal</p>
-                      <p className="font-bold">WAIT</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/40 p-3">
-                      <p className="text-xs text-muted-foreground">Data source</p>
-                      <p className="font-bold">MarketEye Deriv API / WebSocket</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                {isStrategyPanelOpen && (
+  <div className="border-t border-border p-3">
+    <StrategyPanel
+      latestPrice={
+        currentTick?.quote ??
+        prices[prices.length - 1] ??
+        null
+      }
+      pipSize={pipSize}
+      symbol={activeSymbol?.underlying_symbol}
+    />
+  </div>
+)}
             </div>
 
             <div className={`${isStrategyPanelOpen ? 'max-lg:h-[31dvh]' : 'max-lg:h-[45dvh]'} lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] shrink-0`}>
