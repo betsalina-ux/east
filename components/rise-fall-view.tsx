@@ -250,7 +250,6 @@ export function RiseFallView({
               </button>
 
               {isStrategyPanelOpen && (
-                {isStrategyPanelOpen && (
   <div className="border-t border-border p-3">
     <StrategyPanel
       latestPrice={
