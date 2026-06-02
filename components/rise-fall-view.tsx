@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useContractMarkers } from '@/hooks/use-contract-markers';
 import { TradeControls } from './trade-controls';
 import { Button } from '@/components/ui/button';
+import { StrategyPanel } from '@/components/strategy-panel';
 import type {
   AuthState,
   DerivAccount,
