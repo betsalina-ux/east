@@ -19,6 +19,7 @@ import type {
   ProposalInfo,
   BuyResult,
   DerivWS,
+  Tick,
 } from '@deriv/core';
 import type { Direction, UpDownContractType, DurationSelectUnit, DurationOption } from '../lib/types';
 import type { UseSmartChartsApiReturn } from '@/hooks/use-smartcharts-api';
