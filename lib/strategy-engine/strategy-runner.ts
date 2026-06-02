@@ -1,3 +1,4 @@
+import { runMtsStrategy } from './strategies/mts';
 import type {
   StrategyCandle,
   StrategyId,
