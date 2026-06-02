@@ -2,6 +2,7 @@ import { runMtsStrategy } from './strategies/mts';
 import { runSniperRfStrategy } from './strategies/sniper-rf';
 import { runPisStrategy } from './strategies/pis';
 import { runDdsStrategy } from './strategies/dds';
+import { runDdsOuStrategy } from './strategies/dds-ou';
 import type {
   StrategyCandle,
   StrategyId,
