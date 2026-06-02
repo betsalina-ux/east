@@ -94,6 +94,9 @@ function RiseFallTemplate() {
       getQuotes={getQuotes}
       subscribeQuotes={subscribeQuotes}
       unsubscribeQuotes={unsubscribeQuotes}
+      currentTick={riseFall.currentTick}
+      prices={riseFall.prices}
+      pipSize={riseFall.pipSize}
     />
   );
 }
