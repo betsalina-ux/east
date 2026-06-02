@@ -90,6 +90,12 @@ export function runStrategy({
     cooldownRemaining,
   });
 }
+  if (strategyId === 'dds-ou') {
+  return runDdsOuStrategy({
+    ticks,
+    cooldownRemaining,
+  });
+}
 
 return {
   signal: 'WAIT',
