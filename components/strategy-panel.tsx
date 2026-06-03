@@ -19,10 +19,9 @@ const MARKETS: { value: StrategyMarket; label: string }[] = [
 ];
 
 export function StrategyPanel({ latestPrice, pipSize, symbol }: StrategyPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isRunning, setIsRunning] = useState(true);
   const [market, setMarket] = useState<StrategyMarket>('rise-fall');
   const strategies = useMemo(() => getStrategiesForMarket(market), [market]);
-
   const [strategyId, setStrategyId] = useState<StrategyId>('mts');
 
   const selectedStrategy = strategies.find(strategy => strategy.id === strategyId) ?? strategies[0];
@@ -30,7 +29,7 @@ export function StrategyPanel({ latestPrice, pipSize, symbol }: StrategyPanelPro
   const engine = useStrategyEngine({
     market,
     strategyId: selectedStrategy.id,
-    latestPrice,
+    latestPrice: isRunning ? latestPrice : null,
     pipSize,
     symbol,
   });
@@ -41,32 +40,25 @@ export function StrategyPanel({ latestPrice, pipSize, symbol }: StrategyPanelPro
     setStrategyId(nextStrategies[0].id);
   }
 
-  if (!isOpen) {
-    return (
-      <div className="fixed bottom-4 right-4 z-50">
-        <Button onClick={() => setIsOpen(true)}>
-          Open Strategy Panel
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[340px] rounded-2xl border bg-background shadow-xl">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <strong>Strategy Panel</strong>
-        <button onClick={() => setIsOpen(false)} className="text-xl leading-none">
-          ×
-        </button>
-      </div>
+    <div className="max-h-[26dvh] overflow-y-auto text-sm">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Status</p>
+            <p className="font-bold">{isRunning ? 'Running' : 'Stopped'}</p>
+          </div>
+          <Button size="sm" variant={isRunning ? 'default' : 'secondary'} onClick={() => setIsRunning(v => !v)}>
+            {isRunning ? 'ON' : 'OFF'}
+          </Button>
+        </div>
 
-      <div className="space-y-4 p-4">
         <div>
-          <label className="mb-2 block text-sm font-semibold">Market</label>
+          <label className="mb-2 block text-xs font-semibold text-muted-foreground">Market</label>
           <select
             value={market}
             onChange={event => handleMarketChange(event.target.value as StrategyMarket)}
-            className="w-full rounded-lg border bg-background px-3 py-2"
+            className="w-full rounded-lg border bg-background px-3 py-2 font-bold"
           >
             {MARKETS.map(item => (
               <option key={item.value} value={item.value}>
@@ -77,11 +69,12 @@ export function StrategyPanel({ latestPrice, pipSize, symbol }: StrategyPanelPro
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold">Strategy</label>
+          <label className="mb-2 block text-xs font-semibold text-muted-foreground">Strategy</label>
           <div className="grid grid-cols-1 gap-2">
             {strategies.map(strategy => (
               <button
                 key={strategy.id}
+                type="button"
                 onClick={() => setStrategyId(strategy.id)}
                 className={`rounded-lg border px-3 py-2 text-left ${
                   selectedStrategy.id === strategy.id
@@ -89,7 +82,7 @@ export function StrategyPanel({ latestPrice, pipSize, symbol }: StrategyPanelPro
                     : 'bg-background'
                 }`}
               >
-                <div className="font-semibold">{strategy.name}</div>
+                <div className="font-bold">{strategy.name}</div>
                 <div className="text-xs text-muted-foreground">{strategy.description}</div>
               </button>
             ))}
@@ -97,30 +90,34 @@ export function StrategyPanel({ latestPrice, pipSize, symbol }: StrategyPanelPro
         </div>
 
         <div className="rounded-xl border p-3">
-          <div className="text-sm text-muted-foreground">Signal</div>
-          <div className="text-2xl font-bold">{engine.result.signal}</div>
-          <div className="mt-2 text-sm">{engine.result.reason}</div>
+          <p className="text-xs text-muted-foreground">Signal</p>
+          <p className="text-2xl font-black">
+            {isRunning ? engine.result.signal : 'WAIT'}
+          </p>
+          <p className="mt-2 text-xs">
+            {isRunning ? engine.result.reason : 'Strategy panel is OFF.'}
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg border p-2">
-            <div className="text-muted-foreground">Symbol</div>
-            <strong>{symbol ?? '-'}</strong>
+            <p className="text-xs text-muted-foreground">Symbol</p>
+            <p className="font-bold">{symbol ?? '-'}</p>
           </div>
 
           <div className="rounded-lg border p-2">
-            <div className="text-muted-foreground">Price</div>
-            <strong>{latestPrice ?? '-'}</strong>
+            <p className="text-xs text-muted-foreground">Price</p>
+            <p className="font-bold">{latestPrice ?? '-'}</p>
           </div>
 
           <div className="rounded-lg border p-2">
-            <div className="text-muted-foreground">Candle</div>
-            <strong>{engine.currentCandle?.direction ?? '-'}</strong>
+            <p className="text-xs text-muted-foreground">Candle</p>
+            <p className="font-bold">{engine.currentCandle?.direction ?? '-'}</p>
           </div>
 
           <div className="rounded-lg border p-2">
-            <div className="text-muted-foreground">Confidence</div>
-            <strong>{engine.result.confidence}%</strong>
+            <p className="text-xs text-muted-foreground">Confidence</p>
+            <p className="font-bold">{isRunning ? engine.result.confidence : 0}%</p>
           </div>
         </div>
       </div>
