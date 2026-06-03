@@ -193,7 +193,7 @@ export function DigitsView({
               </button>
 
               {isStrategyPanelOpen && (
-  <div className="border-t border-border px-4 py-3">
+  <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3">
     <StrategyPanel
       latestPrice={currentTick?.quote ?? null}
       pipSize={pipSize}
