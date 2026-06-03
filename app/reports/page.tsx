@@ -2,8 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useRiseFallTrading } from '../../hooks/use-rise-fall-trading';
-import { useDigitsTrading } from '../../hooks/use-digits-trading';
+import { useBaseTrading } from '../../hooks/use-base-trading';
 import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
 import { Header } from '@/components/custom/header';
 import { ThemeToggle } from '@/components/custom/theme-toggle';
@@ -11,13 +10,28 @@ import { Footer } from '@/components/custom/footer';
 import Link from 'next/link';
 import { PositionsTable } from '@/components/custom/positions-table';
 
-const RISE_FALL_CONTRACT_LABELS: Record<string, string> = {
+const REPORT_CONTRACT_TYPES = [
+  'CALL',
+  'PUT',
+  'CALLE',
+  'PUTE',
+  'ONETOUCH',
+  'NOTOUCH',
+  'DIGITMATCH',
+  'DIGITDIFF',
+  'DIGITOVER',
+  'DIGITUNDER',
+  'DIGITEVEN',
+  'DIGITODD',
+];
+
+const CONTRACT_LABELS: Record<string, string> = {
   CALL: 'Rise',
   PUT: 'Fall',
   CALLE: 'Rise (Equal)',
   PUTE: 'Fall (Equal)',
-};
-const DIGIT_CONTRACT_LABELS: Record<string, string> = {
+  ONETOUCH: 'Touch',
+  NOTOUCH: 'No Touch',
   DIGITMATCH: 'Matches',
   DIGITDIFF: 'Differs',
   DIGITOVER: 'Over',
@@ -30,14 +44,15 @@ export default function ReportsPage() {
   const router = useRouter();
   const { ws, isConnected, isExhausted, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
-  const trading = useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticated: !!auth.wsUrl, onAuthWSFailed: logout });
-  const digitsTrading = useDigitsTrading({
-  ws,
-  isConnected,
-  isExhausted,
-  isAuthenticated: !!auth.wsUrl,
-  onAuthWSFailed: logout,
-});
+
+  const trading = useBaseTrading({
+    ws,
+    isConnected,
+    isExhausted,
+    isAuthenticated: !!auth.wsUrl,
+    onAuthWSFailed: logout,
+    contractTypes: REPORT_CONTRACT_TYPES,
+  });
 
   useEffect(() => {
     if (authState === 'unauthenticated' || authState === 'error') {
@@ -52,20 +67,6 @@ export default function ReportsPage() {
       </main>
     );
   }
-const allContractLabels = {
-  ...RISE_FALL_CONTRACT_LABELS,
-  ...DIGIT_CONTRACT_LABELS,
-};
-
-const openPositions = [
-  ...trading.openPositions,
-  ...digitsTrading.openPositions,
-];
-
-const closedPositions = [
-  ...trading.closedPositions,
-  ...digitsTrading.closedPositions,
-];
 
   return (
     <main className="flex flex-col bg-background max-lg:h-dvh max-lg:overflow-y-auto lg:min-h-dvh">
@@ -81,7 +82,6 @@ const closedPositions = [
         actions={<ThemeToggle />}
       />
 
-      {/* Spacer to push content below fixed header — authenticated users have a taller header */}
       <div className="h-[76px] shrink-0" />
 
       <div className="flex-1 w-full max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6 pb-14">
@@ -89,19 +89,19 @@ const closedPositions = [
           <span className="text-base leading-none">←</span>
           <span>Back</span>
         </Link>
+
         <PositionsTable
-  openPositions={openPositions}
-  closedPositions={closedPositions}
-  onSell={trading.sellContract}
-  sellingId={trading.sellingId}
-  sellError={trading.sellError}
-  onClearSellError={trading.clearSellError}
-  contractTypeLabels={allContractLabels}
-  className="mt-0"
-/>
+          openPositions={trading.openPositions}
+          closedPositions={trading.closedPositions}
+          onSell={trading.sellContract}
+          sellingId={trading.sellingId}
+          sellError={trading.sellError}
+          onClearSellError={trading.clearSellError}
+          contractTypeLabels={CONTRACT_LABELS}
+          className="mt-0"
+        />
       </div>
 
-      {/* Fixed footer */}
       <div className="fixed bottom-0 left-0 right-0 py-2 text-center bg-background/80 backdrop-blur-sm">
         <Footer />
       </div>
