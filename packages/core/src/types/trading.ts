@@ -38,7 +38,7 @@ export interface ContractsForResponse {
 }
 
 export interface ContractInfo {
-  barriers: number;
+  barrier?: number | string;
   contract_category: string;
   contract_type: string;
   default_stake: number;
