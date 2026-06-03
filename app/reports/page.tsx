@@ -17,6 +17,14 @@ const RISE_FALL_CONTRACT_LABELS: Record<string, string> = {
   CALLE: 'Rise (Equal)',
   PUTE: 'Fall (Equal)',
 };
+const DIGIT_CONTRACT_LABELS: Record<string, string> = {
+  DIGITMATCH: 'Matches',
+  DIGITDIFF: 'Differs',
+  DIGITOVER: 'Over',
+  DIGITUNDER: 'Under',
+  DIGITEVEN: 'Even',
+  DIGITODD: 'Odd',
+};
 
 export default function ReportsPage() {
   const router = useRouter();
