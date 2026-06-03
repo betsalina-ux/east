@@ -227,8 +227,11 @@ export function useRiseFallTrading({
 
     if (contractType !== 'rise-fall' && barrierNum === null) return null;
 
-    const contractForDirection =
-      contractType === 'rise-fall' && allowEquals ? `${direction}E` : direction;
+    const contractForDirection = getContractForDirection({
+  contractType,
+  direction,
+  allowEquals,
+});
 
     const base = {
   contractType: contractForDirection,
@@ -299,8 +302,11 @@ export function useRiseFallTrading({
 
       if (contractType !== 'rise-fall' && barrierNum === null) return null;
 
-      const contractForDirection =
-        contractType === 'rise-fall' && allowEquals ? `${nextDirection}E` : nextDirection;
+      const contractForDirection = getContractForDirection({
+  contractType,
+  direction: nextDirection,
+  allowEquals,
+});
 
       const base = {
   contractType: contractForDirection,
