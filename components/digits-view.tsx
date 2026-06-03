@@ -193,27 +193,14 @@ export function DigitsView({
               </button>
 
               {isStrategyPanelOpen && (
-                <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3 text-sm">
-                  <div className="space-y-3">
-                    <div className="rounded-xl bg-muted/40 p-3">
-                      <p className="text-xs text-muted-foreground">Market</p>
-                      <p className="font-bold">Even/Odd Digits</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/40 p-3">
-                      <p className="text-xs text-muted-foreground">Strategy</p>
-                      <p className="font-bold">PIS — Parity Imbalance Strategy</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/40 p-3">
-                      <p className="text-xs text-muted-foreground">Signal</p>
-                      <p className="font-bold">WAIT</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/40 p-3">
-                      <p className="text-xs text-muted-foreground">Data source</p>
-                      <p className="font-bold">MarketEye Deriv API / WebSocket</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+  <div className="border-t border-border px-4 py-3">
+    <StrategyPanel
+      latestPrice={currentTick?.quote ?? null}
+      pipSize={pipSize}
+      symbol={activeSymbol?.underlying_symbol}
+    />
+  </div>
+)}
             </div>
 
             <Card className="shrink-0 border shadow-sm mb-12">
