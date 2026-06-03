@@ -168,7 +168,7 @@ if (contractType !== 'rise-fall') {
       amount: stakeNum,
       basis: 'stake' as const,
       currency: 'USD',
-      ...(contractType !== 'rise-fall' ? { barrier: barrierNum } : {}),
+      ...(contractType !== 'rise-fall' ? { barrier: normalizedBarrier } : {}),
     };
 
     if (durationUnit === 'end-time') {
@@ -215,7 +215,7 @@ if (contractType !== 'rise-fall') {
       amount: stakeNum,
       basis: 'stake' as const,
       currency: 'USD',
-      ...(contractType !== 'rise-fall' ? { barrier: barrierNum } : {}),
+     ...(contractType !== 'rise-fall' ? { barrier: normalizedBarrier } : {}),
     };
 
     if (durationUnit === 'end-time') {
