@@ -286,7 +286,7 @@ export function RiseFallView({
           {
             high: barrier,
             relative: true,
-            draggable: true,
+            draggable: false,
             color: '#3b82f6',
             foregroundColor: '#3b82f6',
           },
