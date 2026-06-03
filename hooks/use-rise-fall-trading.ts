@@ -151,9 +151,17 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     const stakeNum = parseFloat(stake);
     if (!stakeNum || stakeNum <= 0) return null;
 
-    const barrierNum = parseFloat(barrier);
-    if (contractType !== 'rise-fall' && Number.isNaN(barrierNum)) return null;
+    const normalizedBarrier = barrier.trim();
 
+if (contractType !== 'rise-fall') {
+  if (!normalizedBarrier) return null;
+
+  const isValidBarrier =
+    /^[+-]\d+(\.\d+)?$/.test(normalizedBarrier) ||
+    /^\d+(\.\d+)?$/.test(normalizedBarrier);
+
+  if (!isValidBarrier) return null;
+}
     const base = {
       contractType: contractType === 'rise-fall' && allowEquals ? `${direction}E` : direction,
       symbol: activeSymbol.underlying_symbol,
@@ -190,9 +198,17 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     const stakeNum = parseFloat(stake);
     if (!stakeNum || stakeNum <= 0) return null;
 
-    const barrierNum = parseFloat(barrier);
-    if (contractType !== 'rise-fall' && Number.isNaN(barrierNum)) return null;
+    const normalizedBarrier = barrier.trim();
 
+if (contractType !== 'rise-fall') {
+  if (!normalizedBarrier) return null;
+
+  const isValidBarrier =
+    /^[+-]\d+(\.\d+)?$/.test(normalizedBarrier) ||
+    /^\d+(\.\d+)?$/.test(normalizedBarrier);
+
+  if (!isValidBarrier) return null;
+}
     const base = {
       contractType: contractType === 'rise-fall' && allowEquals ? `${nextDirection}E` : nextDirection,
       symbol: activeSymbol.underlying_symbol,
