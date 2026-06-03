@@ -2,28 +2,13 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useBaseTrading } from '../../hooks/use-base-trading';
+import { useReportsTrading } from '../../hooks/use-reports-trading';
 import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
 import { Header } from '@/components/custom/header';
 import { ThemeToggle } from '@/components/custom/theme-toggle';
 import { Footer } from '@/components/custom/footer';
 import Link from 'next/link';
 import { PositionsTable } from '@/components/custom/positions-table';
-
-const REPORT_CONTRACT_TYPES = [
-  'CALL',
-  'PUT',
-  'CALLE',
-  'PUTE',
-  'ONETOUCH',
-  'NOTOUCH',
-  'DIGITMATCH',
-  'DIGITDIFF',
-  'DIGITOVER',
-  'DIGITUNDER',
-  'DIGITEVEN',
-  'DIGITODD',
-];
 
 const CONTRACT_LABELS: Record<string, string> = {
   CALL: 'Rise',
@@ -42,16 +27,13 @@ const CONTRACT_LABELS: Record<string, string> = {
 
 export default function ReportsPage() {
   const router = useRouter();
-  const { ws, isConnected, isExhausted, auth } = useDerivWSContext();
+  const { ws, isConnected, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
-  const trading = useBaseTrading({
+  const reports = useReportsTrading({
     ws,
     isConnected,
-    isExhausted,
     isAuthenticated: !!auth.wsUrl,
-    onAuthWSFailed: logout,
-    contractTypes: REPORT_CONTRACT_TYPES,
   });
 
   useEffect(() => {
@@ -91,12 +73,12 @@ export default function ReportsPage() {
         </Link>
 
         <PositionsTable
-          openPositions={trading.openPositions}
-          closedPositions={trading.closedPositions}
-          onSell={trading.sellContract}
-          sellingId={trading.sellingId}
-          sellError={trading.sellError}
-          onClearSellError={trading.clearSellError}
+          openPositions={reports.openPositions}
+          closedPositions={reports.closedPositions}
+          onSell={reports.sellContract}
+          sellingId={reports.sellingId}
+          sellError={reports.sellError}
+          onClearSellError={reports.clearSellError}
           contractTypeLabels={CONTRACT_LABELS}
           className="mt-0"
         />
