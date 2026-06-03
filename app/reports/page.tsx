@@ -31,6 +31,13 @@ export default function ReportsPage() {
   const { ws, isConnected, isExhausted, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
   const trading = useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticated: !!auth.wsUrl, onAuthWSFailed: logout });
+  const digitsTrading = useDigitsTrading({
+  ws,
+  isConnected,
+  isExhausted,
+  isAuthenticated: !!auth.wsUrl,
+  onAuthWSFailed: logout,
+});
 
   useEffect(() => {
     if (authState === 'unauthenticated' || authState === 'error') {
@@ -45,7 +52,20 @@ export default function ReportsPage() {
       </main>
     );
   }
+const allContractLabels = {
+  ...RISE_FALL_CONTRACT_LABELS,
+  ...DIGIT_CONTRACT_LABELS,
+};
 
+const openPositions = [
+  ...trading.openPositions,
+  ...digitsTrading.openPositions,
+];
+
+const closedPositions = [
+  ...trading.closedPositions,
+  ...digitsTrading.closedPositions,
+];
 
   return (
     <main className="flex flex-col bg-background max-lg:h-dvh max-lg:overflow-y-auto lg:min-h-dvh">
