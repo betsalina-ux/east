@@ -205,16 +205,16 @@ export function useRiseFallTrading({
     const contractForDirection =
       contractType === 'rise-fall' && allowEquals ? `${direction}E` : direction;
 
-    const base: ProposalParams = {
-      contractType: contractForDirection,
-      symbol: activeSymbol.underlying_symbol,
-      amount: stakeNum,
-      basis: 'stake',
-      currency: 'USD',
-      ...(contractType !== 'rise-fall' && barrierNum !== null
-        ? { barrier: barrierNum }
-        : {}),
-    };
+    const base = {
+  contractType: contractForDirection,
+  symbol: activeSymbol.underlying_symbol,
+  amount: stakeNum,
+  basis: 'stake' as const,
+  currency: 'USD',
+  ...(contractType !== 'rise-fall' && barrierNum !== null
+    ? { barrier: barrierNum }
+    : {}),
+};
 
     if (durationUnit === 'end-time') {
       const dateExpiry = computeEndTimeEpoch(endDate, endTime);
