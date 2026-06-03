@@ -46,14 +46,14 @@ interface TradeControlsProps {
 
 function getContractCopy(contractType: UpDownContractType, direction: Direction) {
   if (contractType === 'higher-lower') {
-    return {
-      selected: direction === 'PUT' ? 'Lower' : 'Higher',
-      leftDirection: 'CALL' as Direction,
-      rightDirection: 'PUT' as Direction,
-      leftLabel: 'Buy Higher',
-      rightLabel: 'Buy Lower',
-    };
-  }
+  return {
+    selected: direction === 'LOWER' ? 'Lower' : 'Higher',
+    leftDirection: 'HIGHER' as Direction,
+    rightDirection: 'LOWER' as Direction,
+    leftLabel: 'Buy Higher',
+    rightLabel: 'Buy Lower',
+  };
+}
 
   if (contractType === 'touch-no-touch') {
     return {
