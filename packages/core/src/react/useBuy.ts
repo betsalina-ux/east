@@ -98,7 +98,10 @@ export function useBuy(
       // New Deriv Options WS does NOT allow `symbol` in proposal requests.
       // It requires `underlying_symbol`. Also, buy should be made using the
       // proposal ID, not by sending contract parameters directly.
-      const proposalResponse = await ws.send<ProposalResponse>(buildProposalPayload(params));
+      const proposalPayload = buildProposalPayload(params);
+console.log('MARKETEYE PROPOSAL PAYLOAD:', proposalPayload);
+
+const proposalResponse = await ws.send<ProposalResponse>(proposalPayload);
 
       if (!proposalResponse.proposal?.id) {
         throw new Error('Could not get contract proposal');
