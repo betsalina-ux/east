@@ -167,11 +167,11 @@ export function useRiseFallTrading({
     }
 
     if (contractType === 'higher-lower') {
-      setDirection(prev => (prev === 'PUT' ? 'PUT' : 'CALL'));
-      setAllowEquals(false);
-      setBarrier(prev => prev || '1');
-      return;
-    }
+  setDirection(prev => (prev === 'LOWER' ? 'LOWER' : 'HIGHER'));
+  setAllowEquals(false);
+  setBarrier(prev => prev || '+0.1');
+  return;
+}
 
     setDirection(prev => (prev === 'PUT' ? 'PUT' : 'CALL'));
   }, [contractType]);
