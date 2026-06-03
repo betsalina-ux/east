@@ -61,9 +61,30 @@ interface UseRiseFallTradingReturn {
   clearSellError: () => void;
 }
 
-export type UseRiseFallTradingParams = Pick<UseBaseTradingParams, 'ws' | 'isConnected' | 'isExhausted' | 'isAuthenticated' | 'onAuthWSFailed'>;
+export type UseRiseFallTradingParams = Pick<
+  UseBaseTradingParams,
+  'ws' | 'isConnected' | 'isExhausted' | 'isAuthenticated' | 'onAuthWSFailed'
+>;
 
-export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticated, onAuthWSFailed }: UseRiseFallTradingParams): UseRiseFallTradingReturn {
+function parseBarrierValue(value: string): number | null {
+  const trimmed = value.trim();
+
+  if (!trimmed) return null;
+
+  const parsed = Number(trimmed);
+
+  if (!Number.isFinite(parsed)) return null;
+
+  return parsed;
+}
+
+export function useRiseFallTrading({
+  ws,
+  isConnected,
+  isExhausted,
+  isAuthenticated,
+  onAuthWSFailed,
+}: UseRiseFallTradingParams): UseRiseFallTradingReturn {
   const {
     ws: tradingWs,
     isConnected: tradingIsConnected,
@@ -82,12 +103,19 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     sellingId,
     sellError,
     clearSellError,
-  } = useBaseTrading({ ws, isConnected, isExhausted, isAuthenticated, onAuthWSFailed, contractTypes: CONTRACT_TYPES });
+  } = useBaseTrading({
+    ws,
+    isConnected,
+    isExhausted,
+    isAuthenticated,
+    onAuthWSFailed,
+    contractTypes: CONTRACT_TYPES,
+  });
 
   const [contractType, setContractType] = useState<UpDownContractType>('rise-fall');
   const [direction, setDirection] = useState<Direction>('CALL');
   const [allowEquals, setAllowEquals] = useState<boolean>(false);
-  const [barrier, setBarrier] = useState<string>('+0.1');
+  const [barrier, setBarrier] = useState<string>('1');
   const [stake, setStake] = useState<string>('10');
   const [duration, setDuration] = useState<number>(1);
   const [durationUnit, setDurationUnitRaw] = useState<DurationSelectUnit>('t');
@@ -97,7 +125,6 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
 
   const durationOptions = useMemo(() => getDurationOptions(contracts), [contracts]);
 
-  // Track durationUnit and activeSymbol in refs so the duration-options effect doesn't list them in deps
   const durationUnitRef = useRef(durationUnit);
   const activeSymbolKeyRef = useRef(activeSymbol?.underlying_symbol);
 
@@ -109,137 +136,215 @@ export function useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticat
     activeSymbolKeyRef.current = activeSymbol?.underlying_symbol;
   }, [activeSymbol?.underlying_symbol]);
 
-  /* eslint-disable react-hooks/set-state-in-effect -- reset duration/end-time state when contracts-derived options change */
   useEffect(() => {
     if (!durationOptions.length) return;
+
     setEndDate(undefined);
     setEndTime('');
     setDurationOptionsSymbol(activeSymbolKeyRef.current ?? null);
+
     const currentOpt = durationOptions.find(o => o.unit === durationUnitRef.current);
+
     if (!currentOpt) {
       const first = durationOptions[0];
       setDurationUnitRaw(first.unit);
       if (first.unit !== 'end-time') setDuration(first.min);
     } else if (currentOpt.unit !== 'end-time') {
-      setDuration(prev => (prev < currentOpt.min || prev > currentOpt.max) ? currentOpt.min : prev);
+      setDuration(prev =>
+        prev < currentOpt.min || prev > currentOpt.max ? currentOpt.min : prev
+      );
     }
   }, [durationOptions]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (contractType === 'touch-no-touch') {
       setDirection(prev => (prev === 'NOTOUCH' ? 'NOTOUCH' : 'ONETOUCH'));
       setAllowEquals(false);
-    } else {
-      setDirection(prev => (prev === 'PUT' ? 'PUT' : 'CALL'));
-      if (contractType !== 'rise-fall') setAllowEquals(false);
+      setBarrier(prev => prev || '1');
+      return;
     }
+
+    if (contractType === 'higher-lower') {
+      setDirection(prev => (prev === 'PUT' ? 'PUT' : 'CALL'));
+      setAllowEquals(false);
+      setBarrier(prev => prev || '1');
+      return;
+    }
+
+    setDirection(prev => (prev === 'PUT' ? 'PUT' : 'CALL'));
   }, [contractType]);
 
-  const setDurationUnit = useCallback((unit: DurationSelectUnit) => {
-    setDurationUnitRaw(unit);
-    const opt = durationOptions.find(o => o.unit === unit);
-    if (opt && unit !== 'end-time') setDuration(opt.min);
-  }, [durationOptions]);
+  const setDurationUnit = useCallback(
+    (unit: DurationSelectUnit) => {
+      setDurationUnitRaw(unit);
+      const opt = durationOptions.find(o => o.unit === unit);
+      if (opt && unit !== 'end-time') setDuration(opt.min);
+    },
+    [durationOptions]
+  );
 
-  const { buyContract: buyWithProposal, buyContractFromParams, isBuying, buyResult, buyError, clearBuyResult } =
-    useBuy(tradingWs, tradingIsConnected);
+  const {
+    buyContractFromParams,
+    isBuying,
+    buyResult,
+    buyError,
+    clearBuyResult,
+  } = useBuy(tradingWs, tradingIsConnected);
 
   const proposalParams: ProposalParams | null = useMemo(() => {
     if (isBuying || !activeSymbol || !durationOptions.length) return null;
     if (durationOptionsSymbol !== activeSymbol.underlying_symbol) return null;
-    const stakeNum = parseFloat(stake);
-    if (!stakeNum || stakeNum <= 0) return null;
 
-    const normalizedBarrier = barrier.trim();
+    const stakeNum = Number(stake);
+    if (!Number.isFinite(stakeNum) || stakeNum <= 0) return null;
 
-if (contractType !== 'rise-fall') {
-  if (!normalizedBarrier) return null;
+    const barrierNum = parseBarrierValue(barrier);
 
-  const isValidBarrier =
-    /^[+-]\d+(\.\d+)?$/.test(normalizedBarrier) ||
-    /^\d+(\.\d+)?$/.test(normalizedBarrier);
+    if (contractType !== 'rise-fall' && barrierNum === null) return null;
 
-  if (!isValidBarrier) return null;
-}
-    const base = {
-      contractType: contractType === 'rise-fall' && allowEquals ? `${direction}E` : direction,
+    const contractForDirection =
+      contractType === 'rise-fall' && allowEquals ? `${direction}E` : direction;
+
+    const base: ProposalParams = {
+      contractType: contractForDirection,
       symbol: activeSymbol.underlying_symbol,
       amount: stakeNum,
-      basis: 'stake' as const,
+      basis: 'stake',
       currency: 'USD',
-      ...(contractType !== 'rise-fall' ? { barrier: normalizedBarrier } : {}),
+      ...(contractType !== 'rise-fall' && barrierNum !== null
+        ? { barrier: barrierNum }
+        : {}),
     };
 
     if (durationUnit === 'end-time') {
       const dateExpiry = computeEndTimeEpoch(endDate, endTime);
       if (!dateExpiry) return null;
-      return { ...base, duration: 0, durationUnit: 'd', dateExpiry };
+
+      return {
+        ...base,
+        duration: 0,
+        durationUnit: 'd',
+        dateExpiry,
+      };
     }
 
     const opt = durationOptions.find(o => o.unit === durationUnit);
     if (!opt || duration < opt.min || duration > opt.max) return null;
 
     if (durationUnit === 'h') {
-      return { ...base, duration: duration * 60, durationUnit: 'm' };
+      return {
+        ...base,
+        duration: duration * 60,
+        durationUnit: 'm',
+      };
     }
 
-    return { ...base, duration, durationUnit };
-  }, [activeSymbol, direction, contractType, allowEquals, barrier, stake, duration, durationUnit, endDate, endTime, isBuying, durationOptions, durationOptionsSymbol]);
+    return {
+      ...base,
+      duration,
+      durationUnit,
+    };
+  }, [
+    activeSymbol,
+    direction,
+    contractType,
+    allowEquals,
+    barrier,
+    stake,
+    duration,
+    durationUnit,
+    endDate,
+    endTime,
+    isBuying,
+    durationOptions,
+    durationOptionsSymbol,
+  ]);
 
-  // Do not keep a live proposal subscription here. The new Options WS validates
-  // proposal streams strictly and was showing: "Properties not allowed: symbol".
-  // We build the exact contract params and buy on button click instead.
   const proposal = null;
 
-  const buildParamsForDirection = useCallback((nextDirection: Direction): ProposalParams | null => {
-    if (!activeSymbol || !durationOptions.length) return null;
-    if (durationOptionsSymbol !== activeSymbol.underlying_symbol) return null;
-    const stakeNum = parseFloat(stake);
-    if (!stakeNum || stakeNum <= 0) return null;
+  const buildParamsForDirection = useCallback(
+    (nextDirection: Direction): ProposalParams | null => {
+      if (!activeSymbol || !durationOptions.length) return null;
+      if (durationOptionsSymbol !== activeSymbol.underlying_symbol) return null;
 
-    const normalizedBarrier = barrier.trim();
+      const stakeNum = Number(stake);
+      if (!Number.isFinite(stakeNum) || stakeNum <= 0) return null;
 
-if (contractType !== 'rise-fall') {
-  if (!normalizedBarrier) return null;
+      const barrierNum = parseBarrierValue(barrier);
 
-  const isValidBarrier =
-    /^[+-]\d+(\.\d+)?$/.test(normalizedBarrier) ||
-    /^\d+(\.\d+)?$/.test(normalizedBarrier);
+      if (contractType !== 'rise-fall' && barrierNum === null) return null;
 
-  if (!isValidBarrier) return null;
-}
-    const base = {
-      contractType: contractType === 'rise-fall' && allowEquals ? `${nextDirection}E` : nextDirection,
-      symbol: activeSymbol.underlying_symbol,
-      amount: stakeNum,
-      basis: 'stake' as const,
-      currency: 'USD',
-     ...(contractType !== 'rise-fall' ? { barrier: normalizedBarrier } : {}),
-    };
+      const contractForDirection =
+        contractType === 'rise-fall' && allowEquals ? `${nextDirection}E` : nextDirection;
 
-    if (durationUnit === 'end-time') {
-      const dateExpiry = computeEndTimeEpoch(endDate, endTime);
-      if (!dateExpiry) return null;
-      return { ...base, duration: 0, durationUnit: 'd', dateExpiry };
-    }
+      const base: ProposalParams = {
+        contractType: contractForDirection,
+        symbol: activeSymbol.underlying_symbol,
+        amount: stakeNum,
+        basis: 'stake',
+        currency: 'USD',
+        ...(contractType !== 'rise-fall' && barrierNum !== null
+          ? { barrier: barrierNum }
+          : {}),
+      };
 
-    const opt = durationOptions.find(o => o.unit === durationUnit);
-    if (!opt || duration < opt.min || duration > opt.max) return null;
+      if (durationUnit === 'end-time') {
+        const dateExpiry = computeEndTimeEpoch(endDate, endTime);
+        if (!dateExpiry) return null;
 
-    if (durationUnit === 'h') {
-      return { ...base, duration: duration * 60, durationUnit: 'm' };
-    }
+        return {
+          ...base,
+          duration: 0,
+          durationUnit: 'd',
+          dateExpiry,
+        };
+      }
 
-    return { ...base, duration, durationUnit };
-  }, [activeSymbol, contractType, allowEquals, barrier, stake, duration, durationUnit, endDate, endTime, durationOptions, durationOptionsSymbol]);
+      const opt = durationOptions.find(o => o.unit === durationUnit);
+      if (!opt || duration < opt.min || duration > opt.max) return null;
 
-  const buyContract = useCallback(async (nextDirection?: Direction) => {
-    const directionToBuy = nextDirection ?? direction;
-    setDirection(directionToBuy);
-    const params = buildParamsForDirection(directionToBuy);
-    if (params) await buyContractFromParams(params);
-  }, [direction, buildParamsForDirection, buyContractFromParams]);
+      if (durationUnit === 'h') {
+        return {
+          ...base,
+          duration: duration * 60,
+          durationUnit: 'm',
+        };
+      }
+
+      return {
+        ...base,
+        duration,
+        durationUnit,
+      };
+    },
+    [
+      activeSymbol,
+      contractType,
+      allowEquals,
+      barrier,
+      stake,
+      duration,
+      durationUnit,
+      endDate,
+      endTime,
+      durationOptions,
+      durationOptionsSymbol,
+    ]
+  );
+
+  const buyContract = useCallback(
+    async (nextDirection?: Direction) => {
+      const directionToBuy = nextDirection ?? direction;
+      setDirection(directionToBuy);
+
+      const params = buildParamsForDirection(directionToBuy);
+
+      if (params) {
+        await buyContractFromParams(params);
+      }
+    },
+    [direction, buildParamsForDirection, buyContractFromParams]
+  );
 
   return {
     ws: tradingWs,
