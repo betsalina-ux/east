@@ -6,9 +6,9 @@ import type { DerivWS } from '@deriv/core';
 export interface ClosedPosition {
   contract_id: number;
   contract_type: string;
-  buy_price: number;
-  sell_price: number;
-  payout: number;
+  buy_price: number | string | null;
+  sell_price: number | string | null;
+  payout: number | string | null;
   longcode: string;
   underlying_symbol: string;
   purchase_time: number;
