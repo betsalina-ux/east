@@ -175,7 +175,7 @@ export function DigitsView({
               />
             </div>
 
-            <div className="shrink-0 rounded-2xl border border-border bg-card shadow-sm">
+            <div className="shrink-0 rounded-2xl border border-border bg-card shadow-sm lg:max-w-[calc(100%-420px)]">
               <button
                 type="button"
                 onClick={() => setIsStrategyPanelOpen(value => !value)}
