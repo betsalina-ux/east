@@ -267,19 +267,33 @@ export function RiseFallView({
             <div className={`${isStrategyPanelOpen ? 'max-lg:h-[31dvh]' : 'max-lg:h-[45dvh]'} lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] shrink-0`}>
               {chartData && activeSymbol?.underlying_symbol ? (
                 <RiseFallChart
-                  symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
-                  symbol={activeSymbol.underlying_symbol}
-                  isConnectionOpened={isConnected}
-                  isMobile={isMobile}
-                  chartData={chartData}
-                  getQuotes={getQuotes}
-                  subscribeQuotes={subscribeQuotes}
-                  unsubscribeQuotes={unsubscribeQuotes}
-                  onSymbolChange={selectSymbol}
-                  isLive={isLive}
-                  endEpoch={endEpoch}
-                  contractsArray={contractMarkers}
-                />
+  symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
+  symbol={activeSymbol.underlying_symbol}
+  isConnectionOpened={isConnected}
+  isMobile={isMobile}
+  chartData={chartData}
+  getQuotes={getQuotes}
+  subscribeQuotes={subscribeQuotes}
+  unsubscribeQuotes={unsubscribeQuotes}
+  onSymbolChange={selectSymbol}
+  isLive={isLive}
+  endEpoch={endEpoch}
+  contractsArray={contractMarkers}
+
+  barriers={
+    contractType !== 'rise-fall'
+      ? [
+          {
+            high: barrier,
+            relative: true,
+            draggable: true,
+            color: '#3b82f6',
+            foregroundColor: '#3b82f6',
+          },
+        ]
+      : undefined
+  }
+/>
               ) : (
                 <div className="h-full w-full flex items-center justify-center rounded-md border border-border/50 bg-muted/30">
                   <div className="text-sm text-muted-foreground">
