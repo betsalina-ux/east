@@ -269,7 +269,7 @@ export function TradeControls({
             {buyLabel === 'Buy' ? copy.leftLabel : buyLabel}
           </Button>
           <Button
-            className="h-12 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold"
+            className="h-12 rounded-full bg-destructive text-destructive-foreground font-bold opacity-100 hover:opacity-100 hover:bg-destructive"
             size="lg"
             disabled={!canTrade}
             onClick={() => {
