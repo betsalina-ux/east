@@ -90,15 +90,15 @@ const closedPositions = [
           <span>Back</span>
         </Link>
         <PositionsTable
-          openPositions={trading.openPositions.filter(p => Object.keys(RISE_FALL_CONTRACT_LABELS).includes(p.contract_type))}
-          closedPositions={trading.closedPositions.filter(p => Object.keys(RISE_FALL_CONTRACT_LABELS).includes(p.contract_type))}
-          onSell={trading.sellContract}
-          sellingId={trading.sellingId}
-          sellError={trading.sellError}
-          onClearSellError={trading.clearSellError}
-          contractTypeLabels={RISE_FALL_CONTRACT_LABELS}
-          className="mt-0"
-        />
+  openPositions={openPositions}
+  closedPositions={closedPositions}
+  onSell={trading.sellContract}
+  sellingId={trading.sellingId}
+  sellError={trading.sellError}
+  onClearSellError={trading.clearSellError}
+  contractTypeLabels={allContractLabels}
+  className="mt-0"
+/>
       </div>
 
       {/* Fixed footer */}
