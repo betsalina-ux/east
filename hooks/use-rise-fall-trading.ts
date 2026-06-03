@@ -66,16 +66,18 @@ export type UseRiseFallTradingParams = Pick<
   'ws' | 'isConnected' | 'isExhausted' | 'isAuthenticated' | 'onAuthWSFailed'
 >;
 
-function parseBarrierValue(value: string): number | null {
+function parseBarrierValue(value: string): string | null {
   const trimmed = value.trim();
 
   if (!trimmed) return null;
 
-  const parsed = Number(trimmed);
+  const isValidBarrier =
+    /^[+-]\d+(\.\d+)?$/.test(trimmed) ||
+    /^\d+(\.\d+)?$/.test(trimmed);
 
-  if (!Number.isFinite(parsed)) return null;
+  if (!isValidBarrier) return null;
 
-  return parsed;
+  return trimmed;
 }
 
 export function useRiseFallTrading({
