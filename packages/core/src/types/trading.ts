@@ -117,6 +117,6 @@ export interface ProposalParams {
   durationUnit: string;
   basis: 'stake' | 'payout';
   currency: string;
-  barrier?: number;
+  barrier?: number | string;
   dateExpiry?: number;
 }
