@@ -117,7 +117,7 @@ export function useRiseFallTrading({
   const [contractType, setContractType] = useState<UpDownContractType>('rise-fall');
   const [direction, setDirection] = useState<Direction>('CALL');
   const [allowEquals, setAllowEquals] = useState<boolean>(false);
-  const [barrier, setBarrier] = useState<string>('1');
+  const [barrier, setBarrier] = useState<string>('+0.1');
   const [stake, setStake] = useState<string>('10');
   const [duration, setDuration] = useState<number>(1);
   const [durationUnit, setDurationUnitRaw] = useState<DurationSelectUnit>('t');
