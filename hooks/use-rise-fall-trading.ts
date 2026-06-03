@@ -79,6 +79,29 @@ function parseBarrierValue(value: string): string | null {
 
   return trimmed;
 }
+function getContractForDirection({
+  contractType,
+  direction,
+  allowEquals,
+}: {
+  contractType: UpDownContractType;
+  direction: Direction;
+  allowEquals: boolean;
+}): string {
+  if (contractType === 'higher-lower') {
+    return direction === 'LOWER' ? 'LOWER' : 'HIGHER';
+  }
+
+  if (contractType === 'touch-no-touch') {
+    return direction === 'NOTOUCH' ? 'NOTOUCH' : 'ONETOUCH';
+  }
+
+  if (allowEquals) {
+    return direction === 'PUT' ? 'PUTE' : 'CALLE';
+  }
+
+  return direction === 'PUT' ? 'PUT' : 'CALL';
+}
 
 export function useRiseFallTrading({
   ws,
