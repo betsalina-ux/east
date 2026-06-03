@@ -1,6 +1,7 @@
 'use client';
 
 import { SmartChartWrapper } from '@/components/custom/smart-chart';
+import type { ChartBarrier } from '@/components/custom/smart-chart';
 import type { ContractMarker } from '@/lib/chart-markers';
 import type { UseSmartChartsApiReturn } from '@/hooks/use-smartcharts-api';
 import type { SmartChartChartData } from '@/hooks/use-smartchart-chart-data';
@@ -18,10 +19,10 @@ export interface RiseFallChartProps {
   isLive?: boolean;
   endEpoch?: number;
   contractsArray?: ContractMarker[];
+  barriers?: ChartBarrier[];
 }
 
 export function RiseFallChart(props: RiseFallChartProps) {
-
   if (!props.symbol) {
     return (
       <div className="h-full w-full flex items-center justify-center">
