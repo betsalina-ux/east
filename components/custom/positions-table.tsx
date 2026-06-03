@@ -27,9 +27,7 @@ interface PositionsTableProps {
   sellingId: number | null;
   sellError: string | null;
   onClearSellError: () => void;
-  /** Map from contract_type string to display label. Falls back to raw type. */
   contractTypeLabels?: Record<string, string>;
-  /** Merged onto the root wrapper (spacing, max-height, overflow). */
   className?: string;
 }
 
@@ -40,11 +38,12 @@ const VALUE_COL_HEADER: Record<PositionFilter, string> = {
 };
 
 function formatContractType(
-  contractType: string,
+  contractType: string | undefined,
   labels: Record<string, string>,
   barrier?: string
 ): string {
-  const label = labels[contractType] ?? contractType;
+  const raw = contractType ?? '-';
+  const label = labels[raw] ?? raw;
   return barrier !== undefined ? `${label} (${barrier})` : label;
 }
 
@@ -74,7 +73,6 @@ export function PositionsTable({
 
   return (
     <div className={cn('mt-6', className)}>
-      {/* Header */}
       <div className="grid grid-cols-3 items-center mb-3">
         <div />
         <h2 className="text-sm font-semibold text-center">Report</h2>
@@ -90,7 +88,6 @@ export function PositionsTable({
         </Select>
       </div>
 
-      {/* Desktop: table */}
       <div className="hidden lg:block rounded-lg border border-border overflow-hidden">
         <Table>
           <TableHeader>
@@ -113,6 +110,7 @@ export function PositionsTable({
                 contractTypeLabels={contractTypeLabels}
               />
             ))}
+
             {visibleClosed.map((pos) => (
               <ClosedPositionRow
                 key={`closed-${pos.contract_id}`}
@@ -120,6 +118,7 @@ export function PositionsTable({
                 contractTypeLabels={contractTypeLabels}
               />
             ))}
+
             {visibleOpen.length === 0 && visibleClosed.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
@@ -131,7 +130,6 @@ export function PositionsTable({
         </Table>
       </div>
 
-      {/* Mobile: cards */}
       <div className="lg:hidden flex flex-col gap-3">
         {visibleOpen.map((pos) => (
           <OpenPositionCard
@@ -142,6 +140,7 @@ export function PositionsTable({
             contractTypeLabels={contractTypeLabels}
           />
         ))}
+
         {visibleClosed.map((pos) => (
           <ClosedPositionCard
             key={`closed-card-${pos.contract_id}`}
@@ -149,6 +148,7 @@ export function PositionsTable({
             contractTypeLabels={contractTypeLabels}
           />
         ))}
+
         {visibleOpen.length === 0 && visibleClosed.length === 0 && (
           <p className="text-center text-sm text-muted-foreground py-8">No positions</p>
         )}
@@ -156,8 +156,6 @@ export function PositionsTable({
     </div>
   );
 }
-
-// ─── Desktop table rows ────────────────────────────────────────────────────
 
 function OpenPositionRow({
   pos,
@@ -170,7 +168,7 @@ function OpenPositionRow({
   onSell: (contractId: number, bidPrice: string) => Promise<void>;
   contractTypeLabels: Record<string, string>;
 }) {
-  const profit = parseFloat(pos.profit);
+  const profit = Number(pos.profit ?? 0);
   const isProfit = profit >= 0;
 
   return (
@@ -178,14 +176,19 @@ function OpenPositionRow({
       <TableCell className="font-medium">
         {formatContractType(pos.contract_type, contractTypeLabels, pos.barrier)}
       </TableCell>
-      <TableCell className="text-muted-foreground">{pos.underlying_symbol}</TableCell>
+      <TableCell className="text-muted-foreground">{pos.underlying_symbol ?? '-'}</TableCell>
       <TableCell className="text-right">
-        {parseFloat(pos.buy_price).toFixed(2)} {pos.currency}
+        {Number(pos.buy_price ?? 0).toFixed(2)} {pos.currency ?? ''}
       </TableCell>
       <TableCell className="text-right">
-        {parseFloat(pos.bid_price).toFixed(2)} {pos.currency}
+        {Number(pos.bid_price ?? 0).toFixed(2)} {pos.currency ?? ''}
       </TableCell>
-      <ProfitCell profit={profit} profitPct={pos.profit_percentage} currency={pos.currency} isProfit={isProfit} />
+      <ProfitCell
+        profit={profit}
+        profitPct={Number(pos.profit_percentage ?? 0)}
+        currency={pos.currency ?? ''}
+        isProfit={isProfit}
+      />
       <TableCell className="text-right">
         <Button
           size="sm"
@@ -207,8 +210,10 @@ function ClosedPositionRow({
   pos: ClosedPosition;
   contractTypeLabels: Record<string, string>;
 }) {
-  const profit = pos.sell_price - pos.buy_price;
-  const profitPct = (profit / pos.buy_price) * 100;
+  const buyPrice = Number(pos.buy_price ?? 0);
+  const sellPrice = Number(pos.sell_price ?? 0);
+  const profit = sellPrice - buyPrice;
+  const profitPct = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
   const isProfit = profit >= 0;
 
   return (
@@ -216,13 +221,9 @@ function ClosedPositionRow({
       <TableCell className="font-medium">
         {formatContractType(pos.contract_type, contractTypeLabels)}
       </TableCell>
-      <TableCell className="text-muted-foreground">{pos.underlying_symbol}</TableCell>
-      <TableCell className="text-right">
-        {pos.buy_price.toFixed(2)}
-      </TableCell>
-      <TableCell className="text-right">
-        {pos.sell_price.toFixed(2)}
-      </TableCell>
+      <TableCell className="text-muted-foreground">{pos.underlying_symbol ?? '-'}</TableCell>
+      <TableCell className="text-right">{buyPrice.toFixed(2)}</TableCell>
+      <TableCell className="text-right">{sellPrice.toFixed(2)}</TableCell>
       <ProfitCell profit={profit} profitPct={profitPct} currency="" isProfit={isProfit} />
       <TableCell />
     </TableRow>
@@ -247,9 +248,12 @@ function ProfitCell({
         isProfit ? 'text-green-600' : 'text-destructive'
       )}
     >
-      {isProfit ? '+' : ''}{profit.toFixed(2)}{currency ? ` ${currency}` : ''}
+      {isProfit ? '+' : ''}
+      {profit.toFixed(2)}
+      {currency ? ` ${currency}` : ''}
       <span className="text-xs font-normal ml-1 opacity-70">
-        ({isProfit ? '+' : ''}{profitPct.toFixed(1)}%)
+        ({isProfit ? '+' : ''}
+        {profitPct.toFixed(1)}%)
       </span>
     </TableCell>
   );
