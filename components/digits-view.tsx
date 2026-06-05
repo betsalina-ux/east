@@ -10,7 +10,6 @@ import { CurrentTickDisplay } from './current-tick-display';
 import { DigitStatsBar } from './digit-stats-bar';
 import { TradeControls } from './digits-trade-controls';
 import { TradeTypeChips } from '@/components/custom/trade-type-chips';
-import { SymbolSelector } from '@/components/custom/symbol-selector';
 import { ThemeToggle } from '@/components/custom/theme-toggle';
 import { StrategyPanel } from '@/components/strategy-panel';
 import type {
