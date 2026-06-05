@@ -241,7 +241,7 @@ export function DigitsView({
                     </div>
                   </div>
 
-                  <div className="max-lg:border-t max-lg:divide-y divide-border lg:contents">
+                  <div className="contents">
                     <div className="py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
                       <CurrentTickDisplay
                         tick={currentTick}
