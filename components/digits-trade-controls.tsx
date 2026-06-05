@@ -20,6 +20,7 @@ interface TradeControlsProps {
   contractMode: ContractMode;
   onContractModeChange: (mode: ContractMode) => void;
   selectedDigit: number;
+  setSelectedDigit: (digit: number) => void;
   isConnected: boolean;
   stake: string;
   onStakeChange: (value: string) => void;
@@ -77,6 +78,7 @@ export function TradeControls({
   contractMode,
   onContractModeChange,
   selectedDigit,
+  setSelectedDigit,
   isConnected,
   stake,
   onStakeChange,
@@ -115,34 +117,35 @@ export function TradeControls({
 
   return (
     <div className="space-y-2 sm:space-y-4">
-      <div className="rounded-xl border border-border bg-muted/20 px-3 py-2"> 
-        <div className="rounded-xl border border-border bg-muted/20 p-3">
-  <p className="text-xs text-muted-foreground mb-2">
-    Last digit prediction
-  </p>
-
-  <div className="grid grid-cols-5 gap-2">
-    {[0,1,2,3,4,5,6,7,8,9].map(digit => (
-      <button
-        key={digit}
-        type="button"
-        onClick={() => setSelectedDigit(digit)}
-        className={`h-12 rounded-lg border text-lg font-bold transition ${
-          selectedDigit === digit
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-background hover:bg-muted'
-        }`}
-      >
-        {digit}
-      </button>
-    ))}
-  </div>
-</div>
+      <div className="rounded-xl border border-border bg-muted/20 px-3 py-2">
         <p className="text-xs text-muted-foreground">Selected contract</p>
         <p className="text-sm font-bold">
           {modeOptions.find(opt => opt.value === contractMode)?.label ?? 'Contract'}
         </p>
         <p className="text-xs text-muted-foreground">Choose by clicking a buy button below</p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-muted/20 p-3">
+        <p className="mb-2 text-xs text-muted-foreground">
+          Last digit prediction
+        </p>
+
+        <div className="grid grid-cols-5 gap-2">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => (
+            <button
+              key={digit}
+              type="button"
+              onClick={() => setSelectedDigit(digit)}
+              className={`h-12 rounded-lg border text-lg font-bold transition ${
+                selectedDigit === digit
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'bg-background hover:bg-muted'
+              }`}
+            >
+              {digit}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -163,6 +166,7 @@ export function TradeControls({
             labelRight="USD"
           />
         </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="duration" className="text-xs text-muted-foreground">
             Duration
@@ -183,22 +187,26 @@ export function TradeControls({
         </div>
       </div>
 
-      <div className="rounded-lg border border-border p-2 sm:p-3 bg-muted/20 space-y-1.5 sm:space-y-2">
-        <p className="text-[11px] sm:text-xs text-muted-foreground mb-0 sm:mb-1">Prediction</p>
+      <div className="rounded-lg border border-border bg-muted/20 p-2 space-y-1.5 sm:p-3 sm:space-y-2">
+        <p className="text-[11px] sm:text-xs text-muted-foreground mb-0 sm:mb-1">
+          Prediction
+        </p>
+
         <p className="text-xs sm:text-sm font-medium">
           Last digit of the price will{' '}
           <span className="text-primary font-bold">{getPredictionText(contractMode)}</span>
           {showDigitInPrediction(contractMode) && (
             <>
               {' '}
-              <span className="inline-flex w-5 h-5 rounded-full bg-primary text-primary-foreground items-center justify-center text-xs font-bold">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                 {selectedDigit}
               </span>
             </>
           )}
         </p>
+
         {(proposal || isProposalLoading) && (
-          <div className="flex items-center justify-between pt-1 border-t border-border">
+          <div className="flex items-center justify-between border-t border-border pt-1">
             <span className="text-xs text-muted-foreground">Payout</span>
             {isProposalLoading ? (
               <Skeleton className="h-4 w-24" />
@@ -216,7 +224,11 @@ export function TradeControls({
           {modeOptions.map((opt, index) => (
             <Button
               key={opt.value}
-              className={`h-12 rounded-full px-6 sm:h-11 sm:px-8 font-bold ${index === 1 ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' : ''}`}
+              className={`h-12 rounded-full px-6 font-bold sm:h-11 sm:px-8 ${
+                index === 1
+                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                  : ''
+              }`}
               disabled={!canTrade}
               onClick={() => {
                 onContractModeChange(opt.value);
@@ -230,7 +242,11 @@ export function TradeControls({
       </div>
 
       {isAuthenticated && (
-        <Button asChild variant="ghost" className="w-full text-sm text-muted-foreground hover:text-foreground">
+        <Button
+          asChild
+          variant="ghost"
+          className="w-full text-sm text-muted-foreground hover:text-foreground"
+        >
           <Link href="/reports">View your positions →</Link>
         </Button>
       )}
