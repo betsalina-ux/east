@@ -123,7 +123,6 @@ export function TradeControls({
         <p className="text-xs text-muted-foreground">Choose by clicking a buy button below</p>
       </div>
 
-
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="stake" className="text-xs text-muted-foreground">
