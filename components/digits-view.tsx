@@ -100,7 +100,6 @@ export function DigitsView({
   isAuthorized,
   isLoading,
   error,
-  symbols,
   activeSymbol,
   selectSymbol,
   currentTick,
@@ -136,8 +135,8 @@ export function DigitsView({
 
   if (error) {
     return (
-      <main className="flex flex-col bg-background items-center justify-center px-4 min-h-dvh">
-        <Card className="max-w-md w-full">
+      <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-destructive">Connection Error</CardTitle>
           </CardHeader>
@@ -164,7 +163,13 @@ export function DigitsView({
         actions={<ThemeToggle />}
       />
 
-      <div className={authState === 'authenticated' ? 'h-[122px] shrink-0 sm:h-[76px]' : 'h-[112px] shrink-0 sm:h-[66px]'} />
+      <div
+        className={
+          authState === 'authenticated'
+            ? 'h-[122px] shrink-0 sm:h-[76px]'
+            : 'h-[112px] shrink-0 sm:h-[66px]'
+        }
+      />
 
       <div className="flex w-full max-w-7xl mx-auto flex-col px-3 py-2 sm:px-4 sm:py-4 gap-2 sm:gap-3 lg:flex-none lg:overflow-visible pb-10">
         {isLoading ? (
@@ -198,7 +203,13 @@ export function DigitsView({
                     {isStrategyPanelOpen ? 'ON — signals visible' : 'OFF — tap to open'}
                   </p>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-bold ${isStrategyPanelOpen ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    isStrategyPanelOpen
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
                   {isStrategyPanelOpen ? 'ON' : 'OFF'}
                 </span>
               </button>
@@ -214,75 +225,74 @@ export function DigitsView({
               )}
             </div>
 
-            <Card className="relative z-10 shrink-0 overflow-visible border shadow-sm mb-12">
-              <CardContent className="flex flex-col overflow-visible p-3 pt-3 sm:p-6 sm:pt-4 pb-2 sm:pb-6">
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px_360px]">
-                  <div className="relative z-50 flex flex-col gap-3 min-w-0 pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0">
-
-  <div className="h-[420px] min-h-[420px]">
-                      {chartData && activeSymbol?.underlying_symbol ? (
-                        <RiseFallChart
-                          symbolKey={`digits-chart-${activeSymbol.underlying_symbol}`}
-                          symbol={activeSymbol.underlying_symbol}
-                          isConnectionOpened={isConnected}
-                          isMobile={false}
-                          chartData={chartData}
-                          getQuotes={getQuotes}
-                          subscribeQuotes={subscribeQuotes}
-                          unsubscribeQuotes={unsubscribeQuotes}
-                          onSymbolChange={selectSymbol}
-                          isLive
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center rounded-md border border-border/50 bg-muted/30">
-                          <div className="text-sm text-muted-foreground">Loading chart...</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="contents">
-                    <div className="relative z-10 py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
-                      <CurrentTickDisplay
-                        tick={currentTick}
-                        lastDigit={lastDigit}
-                        activeSymbol={activeSymbol}
-                        pipSize={pipSize}
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="flex min-w-0 flex-col gap-3">
+                <Card className="relative z-20 shrink-0 overflow-visible border shadow-sm">
+                  <CardContent className="h-[45dvh] min-h-[360px] overflow-visible p-0 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
+                    {chartData && activeSymbol?.underlying_symbol ? (
+                      <RiseFallChart
+                        symbolKey={`digits-chart-${activeSymbol.underlying_symbol}`}
+                        symbol={activeSymbol.underlying_symbol}
+                        isConnectionOpened={isConnected}
+                        isMobile={false}
+                        chartData={chartData}
+                        getQuotes={getQuotes}
+                        subscribeQuotes={subscribeQuotes}
+                        unsubscribeQuotes={unsubscribeQuotes}
+                        onSymbolChange={selectSymbol}
+                        isLive
                       />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center rounded-md border border-border/50 bg-muted/30">
+                        <div className="text-sm text-muted-foreground">Loading chart...</div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-                      <DigitStatsBar
-                        digitStats={digitStats}
-                        selectedDigit={selectedDigit}
-                        onDigitSelect={setSelectedDigit}
-                      />
-                    </div>
+                <Card className="shrink-0 border shadow-sm mb-12 lg:mb-0">
+                  <CardContent className="p-3 sm:p-4">
+                    <CurrentTickDisplay
+                      tick={currentTick}
+                      lastDigit={lastDigit}
+                      activeSymbol={activeSymbol}
+                      pipSize={pipSize}
+                    />
 
-                    <div className="relative z-10 pt-4 sm:pt-6 lg:pt-0 lg:pl-6 lg:border-l lg:border-border">
-                      <TradeControls
-                        tradeType={tradeType}
-                        contractMode={contractMode}
-                        onContractModeChange={setContractMode}
-                        selectedDigit={selectedDigit}
-                        isConnected={isConnected}
-                        stake={stake}
-                        onStakeChange={setStake}
-                        duration={duration}
-                        onDurationChange={setDuration}
-                        durationLimits={durationLimits}
-                        proposal={proposal}
-                        isProposalLoading={isProposalLoading}
-                        onBuy={buyContract}
-                        isBuying={isBuying}
-                        buyResult={buyResult}
-                        buyError={buyError}
-                        onClearBuyResult={clearBuyResult}
-                        isAuthenticated={authState === 'authenticated' && !!isAuthorized}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                    <DigitStatsBar
+                      digitStats={digitStats}
+                      selectedDigit={selectedDigit}
+                      onDigitSelect={setSelectedDigit}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="shrink-0 border shadow-sm mb-12 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
+                <CardContent className="pt-4 pb-32">
+                  <TradeControls
+                    tradeType={tradeType}
+                    contractMode={contractMode}
+                    onContractModeChange={setContractMode}
+                    selectedDigit={selectedDigit}
+                    isConnected={isConnected}
+                    stake={stake}
+                    onStakeChange={setStake}
+                    duration={duration}
+                    onDurationChange={setDuration}
+                    durationLimits={durationLimits}
+                    proposal={proposal}
+                    isProposalLoading={isProposalLoading}
+                    onBuy={buyContract}
+                    isBuying={isBuying}
+                    buyResult={buyResult}
+                    buyError={buyError}
+                    onClearBuyResult={clearBuyResult}
+                    isAuthenticated={authState === 'authenticated' && !!isAuthorized}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
       </div>
