@@ -218,9 +218,8 @@ export function DigitsView({
               <CardContent className="flex flex-col overflow-visible p-3 pt-3 sm:p-6 sm:pt-4 pb-2 sm:pb-6">
                 <div className="lg:grid lg:grid-cols-3 lg:overflow-visible">
                   <div className="relative z-30 flex flex-col gap-3 pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0 lg:pr-6">
-                    
 
-                    <div className="h-[240px] min-h-[240px] lg:h-[360px] lg:min-h-[360px]">
+  <div className="h-[420px] min-h-[420px]">
                       {chartData && activeSymbol?.underlying_symbol ? (
                         <RiseFallChart
                           symbolKey={`digits-chart-${activeSymbol.underlying_symbol}`}
