@@ -215,14 +215,7 @@ export function DigitsView({
                       activeSymbol={activeSymbol}
                       onSymbolChange={selectSymbol}
                     />
-                    <div className="flex items-center justify-center min-h-24 sm:min-h-32 lg:flex-1">
-                      <CurrentTickDisplay
-                        tick={currentTick}
-                        lastDigit={lastDigit}
-                        activeSymbol={activeSymbol}
-                        pipSize={pipSize}
-                      />
-                    </div>
+                   
                   </div>
 
                   {/* Columns 2+3 wrapper: stacked on mobile, transparent on desktop */}
