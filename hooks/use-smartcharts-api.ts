@@ -73,6 +73,13 @@ export function useSmartChartsApi(ws: DerivWS | null): UseSmartChartsApiReturn {
 
       const key = `${symbol}-${granularity ?? 0}`;
 
+const existingUnsubscribe = subscriptionRefs.current[key];
+
+if (existingUnsubscribe) {
+  existingUnsubscribe();
+  delete subscriptionRefs.current[key];
+}
+
       const request: Record<string, unknown> = {
         ticks_history: symbol,
         style: granularity && granularity > 0 ? 'candles' : 'ticks',
