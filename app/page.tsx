@@ -134,13 +134,13 @@ function DigitsTemplate() {
   });
 
   const { chartData } = useSmartChartChartData(
-    trading.ws,
-    trading.isConnected,
-    trading.symbols
-  );
+  ws,
+  trading.isConnected,
+  trading.symbols
+);
 
-  const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
-    useSmartChartsApi(trading.ws);
+const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
+  useSmartChartsApi(ws);
 
   return (
     <DigitsView
