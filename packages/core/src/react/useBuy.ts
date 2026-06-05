@@ -99,7 +99,7 @@ export function useBuy(
       // It requires `underlying_symbol`. Also, buy should be made using the
       // proposal ID, not by sending contract parameters directly.
       const proposalPayload = buildProposalPayload(params);
-console.log('MARKETEYE PROPOSAL PAYLOAD:', proposalPayload);
+
 
 const proposalResponse = await ws.send<ProposalResponse>(proposalPayload);
 
