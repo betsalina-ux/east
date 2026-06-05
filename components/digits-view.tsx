@@ -25,7 +25,7 @@ import type { ContractMode, TradeType, DigitStats } from '../lib/types';
 import type { UseSmartChartsApiReturn } from '@/hooks/use-smartcharts-api';
 import type { SmartChartChartData } from '@/hooks/use-smartchart-chart-data';
 
-const RiseFallChart = dynamic(() => import('./rise-fall-chart').then(m => m.RiseFallChart), {
+const DigitsChart = dynamic(() => import('./digits-chart').then(m => m.DigitsChart), {
   ssr: false,
   loading: () => (
     <div className="h-full w-full animate-pulse rounded-md border border-border/50 bg-muted/30" />
