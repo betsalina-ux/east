@@ -2,9 +2,6 @@
 
 import type { OpenPosition } from '@/hooks/use-open-positions';
 
-/**
- * Contract marker types supported by SmartCharts.
- */
 export type ContractMarkerType =
   | 'TickContract'
   | 'NonTickContract'
@@ -12,7 +9,6 @@ export type ContractMarkerType =
 
 export type MarkerDirection = 'up' | 'down';
 
-/** Individual marker point passed in the `markers` array of a ContractMarker. */
 export interface MarkerPoint {
   epoch: number;
   quote?: number | null;
@@ -24,9 +20,6 @@ export interface MarkerPoint {
   color?: string;
 }
 
-/**
- * A single contract marker entry for the SmartCharts `contracts_array` prop.
- */
 export interface ContractMarker {
   type: ContractMarkerType;
   markers: MarkerPoint[];
@@ -41,21 +34,13 @@ export interface ContractMarker {
   currentEpoch: number | null;
 }
 
-// Contract types supported in this project
 const ACCUMULATOR_TYPES = new Set(['ACCU']);
 
-// Rise/Fall UP contracts
-const UP_CONTRACTS = new Set(['CALL', 'CALLE']);
+const UP_CONTRACTS = new Set(['CALL', 'CALLE', 'HIGHER', 'ONETOUCH']);
+const DOWN_CONTRACTS = new Set(['PUT', 'PUTE', 'LOWER', 'NOTOUCH']);
 
-// Rise/Fall DOWN contracts
-const DOWN_CONTRACTS = new Set(['PUT', 'PUTE']);
+const BARRIER_CONTRACTS = new Set(['HIGHER', 'LOWER', 'ONETOUCH', 'NOTOUCH']);
 
-/**
- * Determines the SmartCharts marker contract type.
- * Accumulators → 'AccumulatorContract'.
- * Rise/Fall with tick_count → 'TickContract'.
- * Rise/Fall without tick_count (time-based) → 'NonTickContract'.
- */
 function getMarkerContractType(
   contractType: string,
   tickCount: number
@@ -63,49 +48,61 @@ function getMarkerContractType(
   if (ACCUMULATOR_TYPES.has(contractType)) {
     return 'AccumulatorContract';
   }
+
   return tickCount > 0 ? 'TickContract' : 'NonTickContract';
 }
 
-/**
- * Determines the marker direction for supported contract types.
- * CALL / CALLE → 'up', PUT / PUTE → 'down', ACCU → 'up' (neutral default).
- */
 function getMarkerDirection(contractType: string): MarkerDirection {
   if (UP_CONTRACTS.has(contractType)) return 'up';
   if (DOWN_CONTRACTS.has(contractType)) return 'down';
-  // Default to 'up' for ACCU and any unrecognised contract types
   return 'up';
 }
 
-/**
- * Formats profit/loss text for display on the chart marker.
- * Returns null if profit is not a valid number.
- */
 function formatProfitLossText(profit: string, currency: string): string | null {
-  const numericProfit = parseFloat(profit);
-  if (isNaN(numericProfit)) return null;
+  const numericProfit = Number(profit);
+  if (!Number.isFinite(numericProfit)) return null;
+
   const sign = numericProfit > 0 ? '+' : '';
   return `${sign}${numericProfit.toFixed(2)} ${currency}`;
 }
 
-/**
- * Calculates a full contract marker from a live open position.
- *
- * Marker anatomy for an open NonTickContract / TickContract:
- *  - entrySpot      @ entry_tick_time with entry_spot quote
- *  - startTime      @ date_start (expanded line, only for the last contract)
- *  - contractMarker @ date_start (the pill/arrow — tick chart only, granularity=0)
- *  - exitTimeCollapsed @ date_expiry (time-based contracts only)
- *
- * Marker anatomy for AccumulatorContract:
- *  - entrySpot  @ entry_tick_time with entry_spot quote
- *  - startTime  @ date_start (only for the last active contract)
- *
- * @param position       - An open position from useOpenPositions
- * @param isLastContract - Whether this is the most-recently started contract
- *                         (receives the expanded startTime line)
- * @param isMobile       - Adjusts contractMarkerLeftPadding (10 vs 100)
- */
+function parseNumber(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getBarrierQuote(position: OpenPosition): number | null {
+  const entrySpot = parseNumber(position.entry_spot);
+  const barrierRaw = position.barrier;
+
+  if (entrySpot === null || barrierRaw === undefined || barrierRaw === null) {
+    return null;
+  }
+
+  const barrierText = String(barrierRaw).trim();
+  if (!barrierText) return null;
+
+  if (barrierText.startsWith('+') || barrierText.startsWith('-')) {
+    const offset = Number(barrierText);
+    if (!Number.isFinite(offset)) return null;
+    return entrySpot + offset;
+  }
+
+  const absolute = Number(barrierText);
+  return Number.isFinite(absolute) ? absolute : null;
+}
+
+function getMarkerQuote(position: OpenPosition): number | null {
+  const contractType = position.contract_type ?? '';
+  const entrySpot = parseNumber(position.entry_spot);
+
+  if (BARRIER_CONTRACTS.has(contractType)) {
+    return getBarrierQuote(position) ?? entrySpot;
+  }
+
+  return entrySpot;
+}
+
 export function calculateMarkerFromPosition(
   position: OpenPosition,
   isLastContract = false,
@@ -120,10 +117,11 @@ export function calculateMarkerFromPosition(
   const profitAndLossText = formatProfitLossText(position.profit, position.currency);
 
   const entrySpotTime = position.entry_tick_time ?? position.date_start;
-  const entrySpotQuote = position.entry_spot ?? null;
+  const entrySpotQuote = parseNumber(position.entry_spot);
+  const markerQuote = getMarkerQuote(position);
 
-  const profit = parseFloat(position.profit);
-  const isProfit = isNaN(profit) ? true : profit >= 0;
+  const profit = Number(position.profit);
+  const isProfit = Number.isFinite(profit) ? profit >= 0 : true;
   const isRunning = !position.is_sold && !position.is_expired;
 
   const contractMarkerLeftPadding = isMobile ? 10 : 100;
@@ -132,11 +130,10 @@ export function calculateMarkerFromPosition(
 
   const markers: MarkerPoint[] = [];
 
-  // Entry spot marker — shown for all supported contract types
-  if (entrySpotQuote !== null) {
+  if (markerQuote !== null) {
     markers.push({
       epoch: entrySpotTime,
-      quote: entrySpotQuote,
+      quote: markerQuote,
       type: 'entrySpot',
       direction,
     });
@@ -144,13 +141,10 @@ export function calculateMarkerFromPosition(
 
   const isContractClosed = !!position.is_sold || !!position.is_expired;
   const exitSpotTime = position.exit_spot_time ?? null;
-  const exitSpotQuote = position.exit_spot ?? null;
+  const exitSpotQuote = parseNumber(position.exit_spot);
 
   if (!isAccumulator) {
     if (isContractClosed) {
-      // --- Closed NonTick/Tick contract markers ---
-
-      // exitSpot — filled dot at the exit price
       if (exitSpotTime !== null && exitSpotQuote !== null) {
         markers.push({
           epoch: exitSpotTime,
@@ -159,10 +153,10 @@ export function calculateMarkerFromPosition(
           direction,
         });
 
-        // profitAndLossLabel — the P&L badge shown above/below the exit dot
         if (profitAndLossText !== null) {
           const exitAboveEntry =
             entrySpotQuote !== null ? exitSpotQuote >= entrySpotQuote : true;
+
           markers.push({
             epoch: exitSpotTime,
             quote: exitSpotQuote,
@@ -173,61 +167,48 @@ export function calculateMarkerFromPosition(
         }
       }
     } else {
-      // --- Running NonTick/Tick contract markers ---
-
-      // startTimeCollapsed — collapsed start marker shown for all running contracts
-      // when entry_spot is known. Creates the hollow circle + horizontal dotted line
-      // at entry spot price, connecting contractMarker to entrySpot.
-      if (entrySpotQuote !== null) {
+      if (markerQuote !== null) {
         markers.push({
           epoch: position.date_start,
-          quote: entrySpotQuote,
+          quote: markerQuote,
           type: 'startTimeCollapsed',
           direction,
         });
       }
 
-      // startTime — expanded vertical dashed line, only for the most recently
-      // purchased contract.
       if (isLastContract) {
         markers.push({
           epoch: position.date_start,
-          ...(entrySpotQuote !== null ? { quote: entrySpotQuote } : {}),
+          ...(markerQuote !== null ? { quote: markerQuote } : {}),
           type: 'startTime',
           direction,
         });
       }
 
-      // contractMarker — the pill/direction-arrow rendered at date_start.
-      if (entrySpotQuote !== null) {
-        // For tick contracts show a running tick counter (e.g. "3/5")
-        // tick_stream is an array that grows by one entry per elapsed tick
+      if (markerQuote !== null) {
         const tickPassed = position.tick_stream?.length ?? 0;
         const tickCounterText = isTickContract ? `${tickPassed}/${tickCount}` : undefined;
 
         markers.push({
           epoch: position.date_start,
-          quote: entrySpotQuote,
+          quote: markerQuote,
           type: 'contractMarker',
           direction,
           ...(tickCounterText ? { text: tickCounterText, textType: 'counter' } : {}),
         });
       }
 
-      // exitTimeCollapsed — dashed vertical end-time line at contract end
       if (position.date_expiry) {
         markers.push({
           epoch: position.date_expiry,
-          quote: entrySpotQuote ?? 0,
+          quote: markerQuote ?? 0,
           type: 'exitTimeCollapsed',
           direction,
         });
       }
     }
   } else {
-    // Accumulator
     if (isContractClosed) {
-      // Closed accumulator: show exit spot and P&L label
       if (exitSpotTime !== null && exitSpotQuote !== null) {
         markers.push({
           epoch: exitSpotTime,
@@ -239,6 +220,7 @@ export function calculateMarkerFromPosition(
         if (profitAndLossText !== null) {
           const exitAboveEntry =
             entrySpotQuote !== null ? exitSpotQuote >= entrySpotQuote : true;
+
           markers.push({
             epoch: exitSpotTime,
             quote: exitSpotQuote,
@@ -248,16 +230,13 @@ export function calculateMarkerFromPosition(
           });
         }
       }
-    } else {
-      // Running accumulator: show startTime line for the active (last) contract
-      if (isLastContract) {
-        markers.push({
-          epoch: position.date_start,
-          quote: entrySpotQuote ?? 0,
-          type: 'startTime',
-          direction,
-        });
-      }
+    } else if (isLastContract) {
+      markers.push({
+        epoch: position.date_start,
+        quote: markerQuote ?? 0,
+        type: 'startTime',
+        direction,
+      });
     }
   }
 
@@ -278,13 +257,6 @@ export function calculateMarkerFromPosition(
   };
 }
 
-/**
- * Computes the contracts_array for SmartCharts from a list of open positions.
- *
- * - Filters to positions matching the active symbol.
- * - Sorts by date_start descending so the most-recently purchased contract is
- *   index 0 and receives the expanded startTime line.
- */
 export function calculateContractMarkers(
   positions: OpenPosition[],
   activeSymbol: string | undefined,
@@ -298,14 +270,13 @@ export function calculateContractMarkers(
 
   if (filtered.length === 0) return [];
 
-  // Sort newest first so index 0 is the last-purchased contract
   const sorted = [...filtered].sort(
     (a, b) => (b.date_start ?? 0) - (a.date_start ?? 0)
   );
 
   const markers: ContractMarker[] = [];
 
-  for (let i = 0; i < sorted.length; i++) {
+  for (let i = 0; i < sorted.length; i += 1) {
     const marker = calculateMarkerFromPosition(sorted[i], i === 0, isMobile);
     if (marker) markers.push(marker);
   }
