@@ -20,7 +20,6 @@ interface TradeControlsProps {
   contractMode: ContractMode;
   onContractModeChange: (mode: ContractMode) => void;
   selectedDigit: number;
-  setSelectedDigit: (digit: number) => void;
   isConnected: boolean;
   stake: string;
   onStakeChange: (value: string) => void;
@@ -78,7 +77,6 @@ export function TradeControls({
   contractMode,
   onContractModeChange,
   selectedDigit,
-  setSelectedDigit,
   isConnected,
   stake,
   onStakeChange,
@@ -125,28 +123,6 @@ export function TradeControls({
         <p className="text-xs text-muted-foreground">Choose by clicking a buy button below</p>
       </div>
 
-      <div className="rounded-xl border border-border bg-muted/20 p-3">
-        <p className="mb-2 text-xs text-muted-foreground">
-          Last digit prediction
-        </p>
-
-        <div className="grid grid-cols-5 gap-2">
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => (
-            <button
-              key={digit}
-              type="button"
-              onClick={() => setSelectedDigit(digit)}
-              className={`h-12 rounded-lg border text-lg font-bold transition ${
-                selectedDigit === digit
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'bg-background hover:bg-muted'
-              }`}
-            >
-              {digit}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
