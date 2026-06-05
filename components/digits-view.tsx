@@ -220,22 +220,23 @@ export function DigitsView({
 
                   {/* Columns 2+3 wrapper: stacked on mobile, transparent on desktop */}
                   <div className="max-lg:border-t max-lg:divide-y divide-border lg:contents">
-                    {/* Column 2: Current tick + digit stats */}
-{tradeType !== 'even-odd' && (
-  <div className="py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
-    <CurrentTickDisplay
-      tick={currentTick}
-      lastDigit={lastDigit}
-      activeSymbol={activeSymbol}
-      pipSize={pipSize}
+     {/* Column 2: Current tick + digit stats */}
+<div className="py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
+  <CurrentTickDisplay
+    tick={currentTick}
+    lastDigit={lastDigit}
+    activeSymbol={activeSymbol}
+    pipSize={pipSize}
+  />
+
+  {tradeType !== 'even-odd' && (
+    <DigitStatsBar
+      digitStats={digitStats}
+      selectedDigit={selectedDigit}
+      onDigitSelect={setSelectedDigit}
     />
-                        <DigitStatsBar
-                          digitStats={digitStats}
-                          selectedDigit={selectedDigit}
-                          onDigitSelect={setSelectedDigit}
-                        />
-                      </div>
-                    )}
+  )}
+</div>
 
                     {/* Column 3: Trade controls */}
                     <div className="pt-4 sm:pt-6 lg:pt-0 lg:pl-6 lg:border-l lg:border-border">
