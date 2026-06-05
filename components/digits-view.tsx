@@ -206,7 +206,7 @@ export function DigitsView({
             <Card className="shrink-0 border shadow-sm mb-12">
               <CardContent className="flex flex-col p-3 pt-3 sm:p-6 sm:pt-4 pb-2 sm:pb-6">
                 <div
-                  className={`lg:grid lg:overflow-visible ${tradeType !== 'even-odd' ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}
+                  className="lg:grid lg:grid-cols-3 lg:overflow-visible"
                 >
                   {/* Column 1: Symbol selector + tick display */}
                   <div className="flex flex-col pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0 lg:pr-6">
