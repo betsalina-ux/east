@@ -287,6 +287,7 @@ export function DigitsView({
                     isBuying={isBuying}
                     buyResult={buyResult}
                     buyError={buyError}
+                    setSelectedDigit={setSelectedDigit}
                     onClearBuyResult={clearBuyResult}
                     isAuthenticated={authState === 'authenticated' && !!isAuthorized}
                   />
