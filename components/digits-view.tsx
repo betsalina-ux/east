@@ -220,9 +220,15 @@ export function DigitsView({
 
                   {/* Columns 2+3 wrapper: stacked on mobile, transparent on desktop */}
                   <div className="max-lg:border-t max-lg:divide-y divide-border lg:contents">
-                    {/* Column 2: Digit stats — hidden for Even/Odd */}
-                    {tradeType !== 'even-odd' && (
-                      <div className="py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
+                    {/* Column 2: Current tick + digit stats */}
+{tradeType !== 'even-odd' && (
+  <div className="py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
+    <CurrentTickDisplay
+      tick={currentTick}
+      lastDigit={lastDigit}
+      activeSymbol={activeSymbol}
+      pipSize={pipSize}
+    />
                         <DigitStatsBar
                           digitStats={digitStats}
                           selectedDigit={selectedDigit}
