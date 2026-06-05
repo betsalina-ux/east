@@ -12,7 +12,13 @@ import { Button } from '@/components/ui/button';
 
 type TemplateKey = 'up-down' | 'digits';
 
-function TemplateTabs({ active, onChange }: { active: TemplateKey; onChange: (value: TemplateKey) => void }) {
+function TemplateTabs({
+  active,
+  onChange,
+}: {
+  active: TemplateKey;
+  onChange: (value: TemplateKey) => void;
+}) {
   return (
     <div className="fixed left-4 top-[72px] z-40 flex gap-2 rounded-full border border-border/70 bg-background/95 p-1 shadow-lg backdrop-blur sm:left-1/2 sm:top-2 sm:z-[60] sm:-translate-x-1/2">
       <Button
@@ -24,6 +30,7 @@ function TemplateTabs({ active, onChange }: { active: TemplateKey; onChange: (va
       >
         Up/Down
       </Button>
+
       <Button
         type="button"
         size="sm"
@@ -41,9 +48,22 @@ function RiseFallTemplate() {
   const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
-  const trading = useRiseFallTrading({ ws, isConnected, isExhausted, isAuthenticated: isAuthorized, onAuthWSFailed: logout });
-  const { chartData } = useSmartChartChartData(trading.ws, trading.isConnected, trading.symbols);
-  const { getQuotes, subscribeQuotes, unsubscribeQuotes } = useSmartChartsApi(trading.ws);
+  const trading = useRiseFallTrading({
+    ws,
+    isConnected,
+    isExhausted,
+    isAuthenticated: isAuthorized,
+    onAuthWSFailed: logout,
+  });
+
+  const { chartData } = useSmartChartChartData(
+    trading.ws,
+    trading.isConnected,
+    trading.symbols
+  );
+
+  const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
+    useSmartChartsApi(trading.ws);
 
   return (
     <RiseFallView
@@ -97,7 +117,6 @@ function RiseFallTemplate() {
       getQuotes={getQuotes}
       subscribeQuotes={subscribeQuotes}
       unsubscribeQuotes={unsubscribeQuotes}
-      
     />
   );
 }
@@ -106,7 +125,22 @@ function DigitsTemplate() {
   const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
-  const trading = useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated: isAuthorized, onAuthWSFailed: logout });
+  const trading = useDigitsTrading({
+    ws,
+    isConnected,
+    isExhausted,
+    isAuthenticated: isAuthorized,
+    onAuthWSFailed: logout,
+  });
+
+  const { chartData } = useSmartChartChartData(
+    trading.ws,
+    trading.isConnected,
+    trading.symbols
+  );
+
+  const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
+    useSmartChartsApi(trading.ws);
 
   return (
     <DigitsView
@@ -147,6 +181,10 @@ function DigitsTemplate() {
       buyResult={trading.buyResult}
       buyError={trading.buyError}
       clearBuyResult={trading.clearBuyResult}
+      chartData={chartData}
+      getQuotes={getQuotes}
+      subscribeQuotes={subscribeQuotes}
+      unsubscribeQuotes={unsubscribeQuotes}
     />
   );
 }
