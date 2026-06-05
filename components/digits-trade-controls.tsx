@@ -115,7 +115,29 @@ export function TradeControls({
 
   return (
     <div className="space-y-2 sm:space-y-4">
-      <div className="rounded-xl border border-border bg-muted/20 px-3 py-2">
+      <div className="rounded-xl border border-border bg-muted/20 px-3 py-2"> 
+        <div className="rounded-xl border border-border bg-muted/20 p-3">
+  <p className="text-xs text-muted-foreground mb-2">
+    Last digit prediction
+  </p>
+
+  <div className="grid grid-cols-5 gap-2">
+    {[0,1,2,3,4,5,6,7,8,9].map(digit => (
+      <button
+        key={digit}
+        type="button"
+        onClick={() => setSelectedDigit(digit)}
+        className={`h-12 rounded-lg border text-lg font-bold transition ${
+          selectedDigit === digit
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-background hover:bg-muted'
+        }`}
+      >
+        {digit}
+      </button>
+    ))}
+  </div>
+</div>
         <p className="text-xs text-muted-foreground">Selected contract</p>
         <p className="text-sm font-bold">
           {modeOptions.find(opt => opt.value === contractMode)?.label ?? 'Contract'}
