@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/custom/footer';
@@ -22,6 +23,15 @@ import type {
   BuyResult,
 } from '@deriv/core';
 import type { ContractMode, TradeType, DigitStats } from '../lib/types';
+import type { UseSmartChartsApiReturn } from '@/hooks/use-smartcharts-api';
+import type { SmartChartChartData } from '@/hooks/use-smartchart-chart-data';
+
+const RiseFallChart = dynamic(() => import('./rise-fall-chart').then(m => m.RiseFallChart), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full animate-pulse rounded-md border border-border/50 bg-muted/30" />
+  ),
+});
 
 const DIGIT_TRADE_TYPE_OPTIONS: { value: TradeType; label: string }[] = [
   { value: 'matches-differs', label: 'Matches/Differs' },
@@ -30,7 +40,6 @@ const DIGIT_TRADE_TYPE_OPTIONS: { value: TradeType; label: string }[] = [
 ];
 
 export interface DigitsViewProps {
-  // Auth
   authState: AuthState;
   accounts: DerivAccount[];
   activeAccount: DerivAccount | null;
@@ -39,13 +48,11 @@ export interface DigitsViewProps {
   onLogout: () => void;
   onSwitchAccount: (accountId: string) => Promise<void>;
 
-  // Connection / loading
   isConnected: boolean;
   isAuthorized?: boolean;
   isLoading: boolean;
   error: string | null;
 
-  // Market data
   symbols: ActiveSymbol[];
   activeSymbol: ActiveSymbol | null;
   selectSymbol: (symbol: string) => void;
@@ -54,7 +61,6 @@ export interface DigitsViewProps {
   digitStats: DigitStats;
   pipSize: number;
 
-  // Trade controls
   tradeType: TradeType;
   setTradeType: (type: TradeType) => void;
   contractMode: ContractMode;
@@ -73,7 +79,12 @@ export interface DigitsViewProps {
   buyResult: BuyResult | null;
   buyError: string | null;
   clearBuyResult: () => void;
-  // Branding (used by preview route; no-op in the real app)
+
+  chartData: SmartChartChartData | undefined;
+  getQuotes: UseSmartChartsApiReturn['getQuotes'];
+  subscribeQuotes: UseSmartChartsApiReturn['subscribeQuotes'];
+  unsubscribeQuotes: UseSmartChartsApiReturn['unsubscribeQuotes'];
+
   logoSrc?: string;
   appName?: string;
 }
@@ -115,6 +126,10 @@ export function DigitsView({
   buyResult,
   buyError,
   clearBuyResult,
+  chartData,
+  getQuotes,
+  subscribeQuotes,
+  unsubscribeQuotes,
   logoSrc,
   appName,
 }: DigitsViewProps) {
@@ -149,20 +164,17 @@ export function DigitsView({
         appName={appName}
         actions={<ThemeToggle />}
       />
-      {/* Spacer to push content below fixed header — taller when authenticated (account bar visible) */}
+
       <div className={authState === 'authenticated' ? 'h-[122px] shrink-0 sm:h-[76px]' : 'h-[112px] shrink-0 sm:h-[66px]'} />
 
-      {/* Scrollable content area — sits between header and sticky buy bar on mobile */}
       <div className="flex w-full max-w-7xl mx-auto flex-col px-3 py-2 sm:px-4 sm:py-4 gap-2 sm:gap-3 lg:flex-none lg:overflow-visible pb-10">
         {isLoading ? (
           <>
-            {/* Trade type chips skeleton */}
             <div className="flex gap-2">
               <Skeleton className="h-8 w-32 rounded-full" />
               <Skeleton className="h-8 w-28 rounded-full" />
               <Skeleton className="h-8 w-24 rounded-full" />
             </div>
-            {/* Main card skeleton */}
             <Skeleton className="w-full h-[420px] rounded-xl" />
           </>
         ) : (
@@ -184,7 +196,7 @@ export function DigitsView({
                 <div>
                   <p className="text-sm font-bold">Strategy Panel</p>
                   <p className="text-xs text-muted-foreground">
-                    {isStrategyPanelOpen ? 'ON — PIS signals visible' : 'OFF — tap to open'}
+                    {isStrategyPanelOpen ? 'ON — signals visible' : 'OFF — tap to open'}
                   </p>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-bold ${isStrategyPanelOpen ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'}`}>
@@ -193,50 +205,64 @@ export function DigitsView({
               </button>
 
               {isStrategyPanelOpen && (
-  <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3">
-    <StrategyPanel
-      latestPrice={currentTick?.quote ?? null}
-      pipSize={pipSize}
-      symbol={activeSymbol?.underlying_symbol}
-    />
-  </div>
-)}
+                <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3">
+                  <StrategyPanel
+                    latestPrice={currentTick?.quote ?? null}
+                    pipSize={pipSize}
+                    symbol={activeSymbol?.underlying_symbol}
+                  />
+                </div>
+              )}
             </div>
 
             <Card className="shrink-0 border shadow-sm mb-12">
               <CardContent className="flex flex-col p-3 pt-3 sm:p-6 sm:pt-4 pb-2 sm:pb-6">
-                <div
-                  className="lg:grid lg:grid-cols-3 lg:overflow-visible"
-                >
-                  {/* Column 1: Symbol selector + tick display */}
-                  <div className="flex flex-col pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0 lg:pr-6">
+                <div className="lg:grid lg:grid-cols-3 lg:overflow-visible">
+                  <div className="flex flex-col gap-3 pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0 lg:pr-6">
                     <SymbolSelector
                       symbols={symbols}
                       activeSymbol={activeSymbol}
                       onSymbolChange={selectSymbol}
                     />
-                   
+
+                    <div className="h-[240px] min-h-[240px] lg:h-[360px] lg:min-h-[360px]">
+                      {chartData && activeSymbol?.underlying_symbol ? (
+                        <RiseFallChart
+                          symbolKey={`digits-chart-${activeSymbol.underlying_symbol}`}
+                          symbol={activeSymbol.underlying_symbol}
+                          isConnectionOpened={isConnected}
+                          isMobile={false}
+                          chartData={chartData}
+                          getQuotes={getQuotes}
+                          subscribeQuotes={subscribeQuotes}
+                          unsubscribeQuotes={unsubscribeQuotes}
+                          onSymbolChange={selectSymbol}
+                          isLive
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center rounded-md border border-border/50 bg-muted/30">
+                          <div className="text-sm text-muted-foreground">Loading chart...</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Columns 2+3 wrapper: stacked on mobile, transparent on desktop */}
                   <div className="max-lg:border-t max-lg:divide-y divide-border lg:contents">
-     {/* Column 2: Current tick + digit stats */}
-<div className="py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
-  <CurrentTickDisplay
-    tick={currentTick}
-    lastDigit={lastDigit}
-    activeSymbol={activeSymbol}
-    pipSize={pipSize}
-  />
+                    <div className="py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
+                      <CurrentTickDisplay
+                        tick={currentTick}
+                        lastDigit={lastDigit}
+                        activeSymbol={activeSymbol}
+                        pipSize={pipSize}
+                      />
 
-  <DigitStatsBar
-  digitStats={digitStats}
-  selectedDigit={selectedDigit}
-  onDigitSelect={setSelectedDigit}
-/>
-</div>
+                      <DigitStatsBar
+                        digitStats={digitStats}
+                        selectedDigit={selectedDigit}
+                        onDigitSelect={setSelectedDigit}
+                      />
+                    </div>
 
-                    {/* Column 3: Trade controls */}
                     <div className="pt-4 sm:pt-6 lg:pt-0 lg:pl-6 lg:border-l lg:border-border">
                       <TradeControls
                         tradeType={tradeType}
@@ -267,7 +293,6 @@ export function DigitsView({
         )}
       </div>
 
-      {/* Fixed footer */}
       <div className="fixed bottom-0 left-0 right-0 py-2 text-center bg-background/80 backdrop-blur-sm">
         <Footer />
       </div>
