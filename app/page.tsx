@@ -193,9 +193,15 @@ export default function MarketEyePage() {
   const [template, setTemplate] = useState<TemplateKey>('up-down');
 
   return (
-    <>
-      <TemplateTabs active={template} onChange={setTemplate} />
-      {template === 'up-down' ? <RiseFallTemplate /> : <DigitsTemplate />}
-    </>
-  );
-}
+  <>
+    <TemplateTabs active={template} onChange={setTemplate} />
+
+    <div className={template === 'up-down' ? 'block' : 'hidden'}>
+      <RiseFallTemplate />
+    </div>
+
+    <div className={template === 'digits' ? 'block' : 'hidden'}>
+      <DigitsTemplate />
+    </div>
+  </>
+);
