@@ -192,28 +192,30 @@ const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
 export default function MarketEyePage() {
   const [template, setTemplateState] = useState<TemplateKey>('up-down');
 
-useEffect(() => {
-  const saved = window.localStorage.getItem('marketeye-template') as TemplateKey | null;
-  if (saved === 'up-down' || saved === 'digits') {
-    setTemplateState(saved);
-  }
-}, []);
+  useEffect(() => {
+    const saved = window.localStorage.getItem('marketeye-template') as TemplateKey | null;
 
-function setTemplate(value: TemplateKey) {
-  setTemplateState(value);
-  window.localStorage.setItem('marketeye-template', value);
-}
+    if (saved === 'up-down' || saved === 'digits') {
+      setTemplateState(saved);
+    }
+  }, []);
+
+  function setTemplate(value: TemplateKey) {
+    setTemplateState(value);
+    window.localStorage.setItem('marketeye-template', value);
+  }
 
   return (
-  <>
-    <TemplateTabs active={template} onChange={setTemplate} />
+    <>
+      <TemplateTabs active={template} onChange={setTemplate} />
 
-    <div className={template === 'up-down' ? 'block' : 'hidden'}>
-      <RiseFallTemplate />
-    </div>
+      <div className={template === 'up-down' ? 'block' : 'hidden'}>
+        <RiseFallTemplate />
+      </div>
 
-    <div className={template === 'digits' ? 'block' : 'hidden'}>
-      <DigitsTemplate />
-    </div>
-  </>
-);
+      <div className={template === 'digits' ? 'block' : 'hidden'}>
+        <DigitsTemplate />
+      </div>
+    </>
+  );
+}
