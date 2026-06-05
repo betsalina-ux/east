@@ -132,7 +132,7 @@ export function SmartChartWrapper({
   );
 
   return (
-    <div className="relative h-full min-h-0 w-full overflow-clip rounded-md border border-border/50 dark:border-white/[0.08] bg-muted/30">
+    <div className="relative z-30 h-full min-h-0 w-full overflow-visible rounded-md border border-border/50 dark:border-white/[0.08] bg-muted/30">
       <SmartChart
         key={symbolKey}
         chartControlsWidgets={null}
