@@ -230,7 +230,7 @@ export function DigitsView({
                 <Card className="relative z-20 shrink-0 overflow-visible border shadow-sm">
                   <CardContent className="h-[45dvh] min-h-[360px] overflow-visible p-0 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
                     {chartData && activeSymbol?.underlying_symbol ? (
-                      <RiseFallChart
+                      <DigitsChart
                         symbolKey={`digits-chart-${activeSymbol.underlying_symbol}`}
                         symbol={activeSymbol.underlying_symbol}
                         isConnectionOpened={isConnected}
