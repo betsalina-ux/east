@@ -218,7 +218,7 @@ export function DigitsView({
             <Card className="relative z-10 shrink-0 overflow-visible border shadow-sm mb-12">
               <CardContent className="flex flex-col overflow-visible p-3 pt-3 sm:p-6 sm:pt-4 pb-2 sm:pb-6">
                 <div className="lg:grid lg:grid-cols-3 lg:overflow-visible">
-                  <div className="flex flex-col gap-3 pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0 lg:pr-6">
+                  <div className="relative z-30 flex flex-col gap-3 pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0 lg:pr-6">
                     <SymbolSelector
                       symbols={symbols}
                       activeSymbol={activeSymbol}
