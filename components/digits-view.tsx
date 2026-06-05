@@ -217,7 +217,7 @@ export function DigitsView({
             <Card className="relative z-10 shrink-0 overflow-visible border shadow-sm mb-12">
               <CardContent className="flex flex-col overflow-visible p-3 pt-3 sm:p-6 sm:pt-4 pb-2 sm:pb-6">
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px_360px]">
-                  <div className="relative z-30 flex flex-col gap-3 pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0 lg:pr-6">
+                  <div className="relative z-50 flex flex-col gap-3 min-w-0 pb-4 pt-1 sm:pb-6 sm:pt-2 lg:py-0">
 
   <div className="h-[420px] min-h-[420px]">
                       {chartData && activeSymbol?.underlying_symbol ? (
@@ -242,7 +242,7 @@ export function DigitsView({
                   </div>
 
                   <div className="contents">
-                    <div className="py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
+                    <div className="relative z-10 py-4 sm:py-6 lg:py-0 lg:px-6 lg:border-l lg:border-border">
                       <CurrentTickDisplay
                         tick={currentTick}
                         lastDigit={lastDigit}
@@ -257,7 +257,7 @@ export function DigitsView({
                       />
                     </div>
 
-                    <div className="pt-4 sm:pt-6 lg:pt-0 lg:pl-6 lg:border-l lg:border-border">
+                    <div className="relative z-10 pt-4 sm:pt-6 lg:pt-0 lg:pl-6 lg:border-l lg:border-border">
                       <TradeControls
                         tradeType={tradeType}
                         contractMode={contractMode}
