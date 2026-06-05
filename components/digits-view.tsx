@@ -229,13 +229,11 @@ export function DigitsView({
     pipSize={pipSize}
   />
 
-  {tradeType !== 'even-odd' && (
-    <DigitStatsBar
-      digitStats={digitStats}
-      selectedDigit={selectedDigit}
-      onDigitSelect={setSelectedDigit}
-    />
-  )}
+  <DigitStatsBar
+  digitStats={digitStats}
+  selectedDigit={selectedDigit}
+  onDigitSelect={setSelectedDigit}
+/>
 </div>
 
                     {/* Column 3: Trade controls */}
