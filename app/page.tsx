@@ -190,7 +190,19 @@ const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
 }
 
 export default function MarketEyePage() {
-  const [template, setTemplate] = useState<TemplateKey>('up-down');
+  const [template, setTemplateState] = useState<TemplateKey>('up-down');
+
+useEffect(() => {
+  const saved = window.localStorage.getItem('marketeye-template') as TemplateKey | null;
+  if (saved === 'up-down' || saved === 'digits') {
+    setTemplateState(saved);
+  }
+}, []);
+
+function setTemplate(value: TemplateKey) {
+  setTemplateState(value);
+  window.localStorage.setItem('marketeye-template', value);
+}
 
   return (
   <>
