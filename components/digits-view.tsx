@@ -1,13 +1,11 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/custom/footer';
 import { Header } from '@/components/custom/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CurrentTickDisplay } from './current-tick-display';
-import { DigitStatsBar } from './digit-stats-bar';
 import { TradeControls } from './digits-trade-controls';
 import { TradeTypeChips } from '@/components/custom/trade-type-chips';
 import { ThemeToggle } from '@/components/custom/theme-toggle';
@@ -24,13 +22,6 @@ import type {
 import type { ContractMode, TradeType, DigitStats } from '../lib/types';
 import type { UseSmartChartsApiReturn } from '@/hooks/use-smartcharts-api';
 import type { SmartChartChartData } from '@/hooks/use-smartchart-chart-data';
-
-const DigitsChart = dynamic(() => import('./digits-chart').then(m => m.DigitsChart), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full w-full animate-pulse rounded-md border border-border/50 bg-muted/30" />
-  ),
-});
 
 const DIGIT_TRADE_TYPE_OPTIONS: { value: TradeType; label: string }[] = [
   { value: 'matches-differs', label: 'Matches/Differs' },
@@ -79,6 +70,7 @@ export interface DigitsViewProps {
   buyError: string | null;
   clearBuyResult: () => void;
 
+  // Kept so app/page.tsx can continue passing chart props without breaking.
   chartData: SmartChartChartData | undefined;
   getQuotes: UseSmartChartsApiReturn['getQuotes'];
   subscribeQuotes: UseSmartChartsApiReturn['subscribeQuotes'];
@@ -86,6 +78,90 @@ export interface DigitsViewProps {
 
   logoSrc?: string;
   appName?: string;
+}
+
+function formatPercent(value: number | undefined): string {
+  if (!Number.isFinite(value)) return '0.0%';
+  return `${Number(value).toFixed(1)}%`;
+}
+
+function DigitPredictionBoard({
+  digitStats,
+  selectedDigit,
+  setSelectedDigit,
+  lastDigit,
+}: {
+  digitStats: DigitStats;
+  selectedDigit: number;
+  setSelectedDigit: (digit: number) => void;
+  lastDigit: number | null;
+}) {
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold">Last digit prediction</p>
+          <p className="text-xs text-muted-foreground">
+            Percentages from recent live ticks
+          </p>
+        </div>
+
+        <div className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
+          Total ticks: {digitStats.totalTicks ?? 0}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-5 gap-2 sm:gap-3">
+        {digits.map(digit => {
+          const isSelected = selectedDigit === digit;
+          const isLive = lastDigit === digit;
+
+          return (
+            <button
+              key={digit}
+              type="button"
+              onClick={() => setSelectedDigit(digit)}
+              className={`relative min-h-[78px] rounded-xl border p-2 text-center transition sm:min-h-[92px] ${
+                isSelected
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                  : 'border-border bg-background hover:bg-muted/60'
+              }`}
+            >
+              {isLive && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-lg leading-none text-primary">
+                  ▲
+                </div>
+              )}
+
+              <div
+                className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-lg font-black sm:h-11 sm:w-11 sm:text-xl ${
+                  isLive
+                    ? 'bg-primary text-primary-foreground'
+                    : isSelected
+                      ? 'bg-primary/20 text-primary'
+                      : 'bg-muted text-foreground'
+                }`}
+              >
+                {digit}
+              </div>
+
+              <div className="mt-2 text-xs font-bold text-muted-foreground sm:text-sm">
+                {formatPercent(digitStats.percentages?.[digit])}
+              </div>
+
+              {isLive && (
+                <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-primary">
+                  Live
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export function DigitsView({
@@ -101,7 +177,6 @@ export function DigitsView({
   isLoading,
   error,
   activeSymbol,
-  selectSymbol,
   currentTick,
   lastDigit,
   digitStats,
@@ -124,10 +199,6 @@ export function DigitsView({
   buyResult,
   buyError,
   clearBuyResult,
-  chartData,
-  getQuotes,
-  subscribeQuotes,
-  unsubscribeQuotes,
   logoSrc,
   appName,
 }: DigitsViewProps) {
@@ -227,45 +298,23 @@ export function DigitsView({
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
               <div className="flex min-w-0 flex-col gap-3">
-                <Card className="relative z-20 shrink-0 overflow-visible border shadow-sm">
-                  <CardContent className="h-[45dvh] min-h-[360px] overflow-visible p-0 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
-                    {chartData && activeSymbol?.underlying_symbol ? (
-                      <DigitsChart
-                        symbolKey={`digits-chart-${activeSymbol.underlying_symbol}`}
-                        symbol={activeSymbol.underlying_symbol}
-                        isConnectionOpened={isConnected}
-                        isMobile={false}
-                        chartData={chartData}
-                        getQuotes={getQuotes}
-                        subscribeQuotes={subscribeQuotes}
-                        unsubscribeQuotes={unsubscribeQuotes}
-                        onSymbolChange={selectSymbol}
-                        isLive
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center rounded-md border border-border/50 bg-muted/30">
-                        <div className="text-sm text-muted-foreground">Loading chart...</div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card className="shrink-0 border shadow-sm mb-12 lg:mb-0">
-                  <CardContent className="p-3 sm:p-4">
+                <Card className="shrink-0 border shadow-sm">
+                  <CardContent className="p-3 sm:p-5">
                     <CurrentTickDisplay
                       tick={currentTick}
                       lastDigit={lastDigit}
                       activeSymbol={activeSymbol}
                       pipSize={pipSize}
                     />
-
-                    <DigitStatsBar
-                      digitStats={digitStats}
-                      selectedDigit={selectedDigit}
-                      onDigitSelect={setSelectedDigit}
-                    />
                   </CardContent>
                 </Card>
+
+                <DigitPredictionBoard
+                  digitStats={digitStats}
+                  selectedDigit={selectedDigit}
+                  setSelectedDigit={setSelectedDigit}
+                  lastDigit={lastDigit}
+                />
               </div>
 
               <Card className="shrink-0 border shadow-sm mb-12 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
@@ -287,7 +336,6 @@ export function DigitsView({
                     isBuying={isBuying}
                     buyResult={buyResult}
                     buyError={buyError}
-                    setSelectedDigit={setSelectedDigit}
                     onClearBuyResult={clearBuyResult}
                     isAuthenticated={authState === 'authenticated' && !!isAuthorized}
                   />
