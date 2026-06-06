@@ -5,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/custom/footer';
 import { Header } from '@/components/custom/header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CurrentTickDisplay } from './current-tick-display';
-import { DigitStatsBar } from './digit-stats-bar';
 import { TradeControls } from './digits-trade-controls';
 import { TradeTypeChips } from '@/components/custom/trade-type-chips';
 import { SymbolSelector } from '@/components/custom/symbol-selector';
@@ -72,8 +70,6 @@ export interface DigitsViewProps {
   buyError: string | null;
   clearBuyResult: () => void;
 
-  // Kept so app/page.tsx can still pass chart props without TypeScript errors.
-  // Digits Market now uses a clean probability board instead of SmartChart.
   chartData?: SmartChartChartData | undefined;
   getQuotes?: UseSmartChartsApiReturn['getQuotes'];
   subscribeQuotes?: UseSmartChartsApiReturn['subscribeQuotes'];
@@ -81,6 +77,11 @@ export interface DigitsViewProps {
 
   logoSrc?: string;
   appName?: string;
+}
+
+function formatPercentage(value: number | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return `${value.toFixed(1)}%`;
 }
 
 export function DigitsView({
@@ -124,6 +125,9 @@ export function DigitsView({
   appName,
 }: DigitsViewProps) {
   const [isStrategyPanelOpen, setIsStrategyPanelOpen] = useState(false);
+
+  const priceText =
+    currentTick && activeSymbol ? currentTick.quote.toFixed(pipSize) : '---';
 
   if (error) {
     return (
@@ -217,9 +221,9 @@ export function DigitsView({
               )}
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+            <div className="grid gap-4 lg:grid-cols-[720px_420px]">
               <Card className="shrink-0 border shadow-sm mb-12 lg:mb-0">
-                <CardContent className="space-y-4 p-3 sm:p-4">
+                <CardContent className="space-y-3 p-3 sm:p-4">
                   <div className="rounded-xl border border-border bg-muted/20 p-3">
                     <p className="mb-2 text-xs font-semibold text-muted-foreground">
                       Volatility
@@ -231,39 +235,78 @@ export function DigitsView({
                     />
                   </div>
 
-                  <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
-                    <CurrentTickDisplay
-                      tick={currentTick}
-                      lastDigit={lastDigit}
-                      activeSymbol={activeSymbol}
-                      pipSize={pipSize}
-                    />
-                  </div>
-
-                  <div className="rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="rounded-xl border border-border bg-muted/20 p-4">
+                    <div className="mb-3 flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-bold">Last digit probability</p>
                         <p className="text-xs text-muted-foreground">
                           Percentages update from live ticks.
                         </p>
                       </div>
+
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Live digit</p>
                         <div className="inline-flex items-center gap-1 text-primary">
                           <span className="text-lg leading-none">▲</span>
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
                             {lastDigit ?? '-'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <DigitStatsBar
-                      digitStats={digitStats}
-                      selectedDigit={selectedDigit}
-                      onDigitSelect={setSelectedDigit}
-                    />
+                    <div className="mb-3 text-center">
+                      <div className="font-mono text-3xl font-bold tracking-wide sm:text-4xl">
+                        {priceText}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Live price
+                      </div>
+                    </div>
+
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      Last digit prediction
+                    </p>
+
+                    <div className="mx-auto grid max-w-xl grid-cols-5 gap-3">
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => {
+                        const isSelected = selectedDigit === digit;
+                        const isLive = lastDigit === digit;
+                        const percentage = formatPercentage(digitStats.percentages[digit]);
+
+                        return (
+                          <button
+                            key={digit}
+                            type="button"
+                            onClick={() => setSelectedDigit(digit)}
+                            className="flex flex-col items-center gap-1"
+                          >
+                            <span
+                              className={`flex h-14 w-14 items-center justify-center rounded-xl border text-2xl font-bold transition sm:h-16 sm:w-16 ${
+                                isSelected
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : isLive
+                                    ? 'border-primary bg-primary/10 text-primary'
+                                    : 'border-border bg-background hover:bg-muted'
+                              }`}
+                            >
+                              {digit}
+                            </span>
+                            <span
+                              className={`font-mono text-xs font-bold ${
+                                isLive
+                                  ? 'text-primary'
+                                  : digitStats.percentages[digit] < 9
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground'
+                              }`}
+                            >
+                              {percentage}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
