@@ -9,8 +9,11 @@ import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
 import { RiseFallView } from '@/components/rise-fall-view';
 import { DigitsView } from '@/components/digits-view';
 import { Button } from '@/components/ui/button';
+import { Header } from '@/components/custom/header';
+import { ThemeToggle } from '@/components/custom/theme-toggle';
+import { Footer } from '@/components/custom/footer';
 
-type TemplateKey = 'up-down' | 'digits';
+type TemplateKey = 'up-down' | 'digits' | 'd-bot';
 
 function TemplateTabs({
   active,
@@ -39,6 +42,16 @@ function TemplateTabs({
         onClick={() => onChange('digits')}
       >
         Digits Market
+      </Button>
+
+      <Button
+        type="button"
+        size="sm"
+        variant={active === 'd-bot' ? 'default' : 'ghost'}
+        className="rounded-full px-4 font-bold"
+        onClick={() => onChange('d-bot')}
+      >
+        D BOT
       </Button>
     </div>
   );
@@ -134,13 +147,13 @@ function DigitsTemplate() {
   });
 
   const { chartData } = useSmartChartChartData(
-  ws,
-  trading.isConnected,
-  trading.symbols
-);
+    ws,
+    trading.isConnected,
+    trading.symbols
+  );
 
-const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
-  useSmartChartsApi(ws);
+  const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
+    useSmartChartsApi(ws);
 
   return (
     <DigitsView
@@ -189,13 +202,55 @@ const { getQuotes, subscribeQuotes, unsubscribeQuotes } =
   );
 }
 
+function DBotTemplate() {
+  const { auth } = useDerivWSContext();
+  const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
+
+  return (
+    <main className="flex min-h-dvh flex-col bg-background">
+      <Header
+        authState={authState}
+        accounts={accounts}
+        activeAccount={activeAccount}
+        onLogin={login}
+        onSignUp={signUp}
+        onLogout={logout}
+        onSwitchAccount={switchAccount}
+        logoSrc="/logo.png"
+        actions={<ThemeToggle />}
+      />
+
+      <div
+        className={
+          authState === 'authenticated'
+            ? 'h-[122px] shrink-0 sm:h-[76px]'
+            : 'h-[112px] shrink-0 sm:h-[66px]'
+        }
+      />
+
+      <div className="flex flex-1 items-center justify-center px-4 pb-16">
+        <div className="w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-sm">
+          <h1 className="text-2xl font-bold">Deriv Bot</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            D BOT trading panel coming soon.
+          </p>
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 py-2 text-center bg-background/80 backdrop-blur-sm">
+        <Footer />
+      </div>
+    </main>
+  );
+}
+
 export default function MarketEyePage() {
   const [template, setTemplateState] = useState<TemplateKey>('up-down');
 
   useEffect(() => {
     const saved = window.localStorage.getItem('marketeye-template') as TemplateKey | null;
 
-    if (saved === 'up-down' || saved === 'digits') {
+    if (saved === 'up-down' || saved === 'digits' || saved === 'd-bot') {
       setTemplateState(saved);
     }
   }, []);
@@ -209,13 +264,9 @@ export default function MarketEyePage() {
     <>
       <TemplateTabs active={template} onChange={setTemplate} />
 
-      <div className={template === 'up-down' ? 'block' : 'hidden'}>
-        <RiseFallTemplate />
-      </div>
-
-      <div className={template === 'digits' ? 'block' : 'hidden'}>
-        <DigitsTemplate />
-      </div>
+      {template === 'up-down' && <RiseFallTemplate />}
+      {template === 'digits' && <DigitsTemplate />}
+      {template === 'd-bot' && <DBotTemplate />}
     </>
   );
 }
