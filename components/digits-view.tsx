@@ -187,129 +187,132 @@ export function DigitsView({
               />
             </div>
 
-            <div className="shrink-0 rounded-2xl border border-border bg-card shadow-sm lg:max-w-[calc(100%-420px)]">
-              <button
-                type="button"
-                onClick={() => setIsStrategyPanelOpen(value => !value)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left"
-              >
-                <div>
-                  <p className="text-sm font-bold">Strategy Panel</p>
-                  <p className="text-xs text-muted-foreground">
-                    {isStrategyPanelOpen ? 'ON — signals visible' : 'OFF — tap to open'}
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-bold ${
-                    isStrategyPanelOpen
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {isStrategyPanelOpen ? 'ON' : 'OFF'}
-                </span>
-              </button>
-
-              {isStrategyPanelOpen && (
-                <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3">
-                  <StrategyPanel
-                    latestPrice={currentTick?.quote ?? null}
-                    pipSize={pipSize}
-                    symbol={activeSymbol?.underlying_symbol}
-                  />
-                </div>
-              )}
-            </div>
-
             <div className="grid gap-4 lg:grid-cols-[720px_420px]">
-              <Card className="shrink-0 border shadow-sm mb-12 lg:mb-0">
-                <CardContent className="space-y-3 p-3 sm:p-4">
-                  <div className="rounded-xl border border-border bg-muted/20 p-3">
-                    <p className="mb-2 text-xs font-semibold text-muted-foreground">
-                      Volatility
-                    </p>
-                    <SymbolSelector
-                      symbols={symbols}
-                      activeSymbol={activeSymbol}
-                      onSymbolChange={selectSymbol}
-                    />
-                  </div>
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-border bg-card shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setIsStrategyPanelOpen(value => !value)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left"
+                  >
+                    <div>
+                      <p className="text-sm font-bold">Strategy Panel</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isStrategyPanelOpen ? 'ON — signals visible' : 'OFF — tap to open'}
+                      </p>
+                    </div>
 
-                  <div className="rounded-xl border border-border bg-muted/20 p-4">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-bold">Last digit probability</p>
-                        <p className="text-xs text-muted-foreground">
-                          Percentages update from live ticks.
-                        </p>
-                      </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${
+                        isStrategyPanelOpen
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {isStrategyPanelOpen ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
 
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Live digit</p>
-                        <div className="inline-flex items-center gap-1 text-primary">
-                          <span className="text-lg leading-none">▲</span>
-                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
-                            {lastDigit ?? '-'}
-                          </span>
+                  {isStrategyPanelOpen && (
+                    <div className="max-h-[24dvh] overflow-y-auto border-t border-border px-4 py-3">
+                      <StrategyPanel
+                        latestPrice={currentTick?.quote ?? null}
+                        pipSize={pipSize}
+                        symbol={activeSymbol?.underlying_symbol}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <Card className="shrink-0 border shadow-sm mb-12 lg:mb-0">
+                  <CardContent className="space-y-3 p-3 sm:p-4">
+                    <div className="rounded-xl border border-border bg-muted/20 p-3">
+                      <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                        Volatility
+                      </p>
+                      <SymbolSelector
+                        symbols={symbols}
+                        activeSymbol={activeSymbol}
+                        onSymbolChange={selectSymbol}
+                      />
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-muted/20 p-4">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-bold">Last digit probability</p>
+                          <p className="text-xs text-muted-foreground">
+                            Percentages update from live ticks.
+                          </p>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Live digit</p>
+                          <div className="inline-flex items-center gap-1 text-primary">
+                            <span className="text-lg leading-none">▲</span>
+                            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
+                              {lastDigit ?? '-'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="mb-3 text-center">
-                      <div className="font-mono text-3xl font-bold tracking-wide sm:text-4xl">
-                        {priceText}
+                      <div className="mb-3 text-center">
+                        <div className="font-mono text-3xl font-bold tracking-wide sm:text-4xl">
+                          {priceText}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Live price
+                        </div>
                       </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        Live price
+
+                      <p className="mb-2 text-sm text-muted-foreground">
+                        Last digit prediction
+                      </p>
+
+                      <div className="mx-auto grid max-w-xl grid-cols-5 gap-3">
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => {
+                          const isSelected = selectedDigit === digit;
+                          const isLive = lastDigit === digit;
+                          const percentage = formatPercentage(digitStats.percentages[digit]);
+
+                          return (
+                            <button
+                              key={digit}
+                              type="button"
+                              onClick={() => setSelectedDigit(digit)}
+                              className="flex flex-col items-center gap-1"
+                            >
+                              <span
+                                className={`flex h-14 w-14 items-center justify-center rounded-xl border text-2xl font-bold transition sm:h-16 sm:w-16 ${
+                                  isSelected
+                                    ? 'border-primary bg-primary text-primary-foreground'
+                                    : isLive
+                                      ? 'border-primary bg-primary/10 text-primary'
+                                      : 'border-border bg-background hover:bg-muted'
+                                }`}
+                              >
+                                {digit}
+                              </span>
+                              <span
+                                className={`font-mono text-xs font-bold ${
+                                  isLive
+                                    ? 'text-primary'
+                                    : digitStats.percentages[digit] < 9
+                                      ? 'text-destructive'
+                                      : 'text-muted-foreground'
+                                }`}
+                              >
+                                {percentage}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-
-                    <p className="mb-2 text-sm text-muted-foreground">
-                      Last digit prediction
-                    </p>
-
-                    <div className="mx-auto grid max-w-xl grid-cols-5 gap-3">
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => {
-                        const isSelected = selectedDigit === digit;
-                        const isLive = lastDigit === digit;
-                        const percentage = formatPercentage(digitStats.percentages[digit]);
-
-                        return (
-                          <button
-                            key={digit}
-                            type="button"
-                            onClick={() => setSelectedDigit(digit)}
-                            className="flex flex-col items-center gap-1"
-                          >
-                            <span
-                              className={`flex h-14 w-14 items-center justify-center rounded-xl border text-2xl font-bold transition sm:h-16 sm:w-16 ${
-                                isSelected
-                                  ? 'border-primary bg-primary text-primary-foreground'
-                                  : isLive
-                                    ? 'border-primary bg-primary/10 text-primary'
-                                    : 'border-border bg-background hover:bg-muted'
-                              }`}
-                            >
-                              {digit}
-                            </span>
-                            <span
-                              className={`font-mono text-xs font-bold ${
-                                isLive
-                                  ? 'text-primary'
-                                  : digitStats.percentages[digit] < 9
-                                    ? 'text-destructive'
-                                    : 'text-muted-foreground'
-                              }`}
-                            >
-                              {percentage}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
 
               <Card className="shrink-0 border shadow-sm mb-12 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
                 <CardContent className="pt-4 pb-32">
