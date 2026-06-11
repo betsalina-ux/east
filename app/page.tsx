@@ -8,6 +8,7 @@ import { useDigitsTrading } from '@/hooks/use-digits-trading';
 import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
 import { RiseFallView } from '@/components/rise-fall-view';
 import { DigitsView } from '@/components/digits-view';
+import { DBotManager } from '@/components/d-bot-manager';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/custom/header';
 import { ThemeToggle } from '@/components/custom/theme-toggle';
@@ -203,7 +204,7 @@ function DigitsTemplate() {
 }
 
 function DBotTemplate() {
-  const { auth } = useDerivWSContext();
+  const { ws, isConnected, isAuthorized, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
   return (
@@ -228,16 +229,15 @@ function DBotTemplate() {
         }
       />
 
-      <div className="flex flex-1 items-center justify-center px-4 pb-16">
-        <div className="w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-sm">
-          <h1 className="text-2xl font-bold">Deriv Bot</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            D BOT trading panel coming soon.
-          </p>
-        </div>
+      <div className="flex flex-1 items-start justify-center px-4 pb-20 pt-6">
+        <DBotManager
+          ws={ws}
+          isConnected={isConnected}
+          isAuthorized={isAuthorized}
+        />
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 py-2 text-center bg-background/80 backdrop-blur-sm">
+      <div className="fixed bottom-0 left-0 right-0 bg-background/80 py-2 text-center backdrop-blur-sm">
         <Footer />
       </div>
     </main>
