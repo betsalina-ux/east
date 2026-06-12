@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBuy } from '@deriv/core';
 import type { DerivWS, ActiveSymbol, ProposalParams } from '@deriv/core';
 import { useIsMobile } from '@/hooks/use-is-mobile';
@@ -45,6 +45,13 @@ interface DBotWorkspaceProps {
   isExhausted: boolean;
   isAuthorized: boolean;
   onAuthWSFailed: () => void;
+}
+
+interface BotStats {
+  trades: number;
+  wins: number;
+  losses: number;
+  profit: number;
 }
 
 function getMarketLabel(market: BotMarket) {
@@ -94,6 +101,10 @@ function findSymbolName(symbol: ActiveSymbol | null) {
   return symbol.underlying_symbol_name || symbol.underlying_symbol;
 }
 
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
 export function DBotWorkspace({
   ws,
   isConnected,
@@ -106,6 +117,7 @@ export function DBotWorkspace({
   const [botType, setBotType] = useState<BotType>('martingale');
   const [botMarket, setBotMarket] = useState<BotMarket>('rise-fall');
   const [botContract, setBotContract] = useState<BotContract>('CALL');
+
   const [stake, setStake] = useState('1');
   const [duration, setDuration] = useState('1');
   const [multiplier, setMultiplier] = useState('2');
@@ -113,8 +125,23 @@ export function DBotWorkspace({
   const [profitTarget, setProfitTarget] = useState('5');
   const [lossLimit, setLossLimit] = useState('2');
   const [selectedDigit, setSelectedDigit] = useState('5');
+
+  const [currentStake, setCurrentStake] = useState(1);
   const [isBotRunning, setIsBotRunning] = useState(false);
   const [botMessage, setBotMessage] = useState('');
+  const [stats, setStats] = useState<BotStats>({
+    trades: 0,
+    wins: 0,
+    losses: 0,
+    profit: 0,
+  });
+
+  const isBotRunningRef = useRef(false);
+  const currentStakeRef = useRef(1);
+  const pendingContractIdRef = useRef<number | null>(null);
+  const processedContractsRef = useRef<Set<number>>(new Set());
+  const nextTradeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPlacingTradeRef = useRef(false);
 
   const riseFall = useRiseFallTrading({
     ws,
@@ -146,6 +173,7 @@ export function DBotWorkspace({
   const {
     buyContractFromParams,
     isBuying,
+    buyResult,
     buyError,
   } = useBuy(ws, isConnected);
 
@@ -157,9 +185,32 @@ export function DBotWorkspace({
 
   const contractOptions = useMemo(() => getContractOptions(botMarket), [botMarket]);
 
+  useEffect(() => {
+    isBotRunningRef.current = isBotRunning;
+  }, [isBotRunning]);
+
+  useEffect(() => {
+    currentStakeRef.current = currentStake;
+  }, [currentStake]);
+
+  useEffect(() => {
+    const initialStake = Number(stake);
+    if (Number.isFinite(initialStake) && initialStake > 0 && !isBotRunning) {
+      setCurrentStake(initialStake);
+      currentStakeRef.current = initialStake;
+    }
+  }, [stake, isBotRunning]);
+
+  useEffect(() => {
+    return () => {
+      if (nextTradeTimerRef.current) clearTimeout(nextTradeTimerRef.current);
+    };
+  }, []);
+
   function handleMarketChange(value: BotMarket) {
     setBotMarket(value);
     setBotContract(getDefaultContract(value));
+    handleStopBot();
 
     if (value === 'rise-fall') {
       riseFall.setContractType('rise-fall');
@@ -182,31 +233,14 @@ export function DBotWorkspace({
     }
   }
 
-  async function handleStartBot() {
-    setBotMessage('');
+  const buildBotParams = useCallback((): ProposalParams | null => {
+    if (!activeTrading.activeSymbol?.underlying_symbol) return null;
 
-    if (!isAuthorized) {
-      setBotMessage('Please login before starting the bot.');
-      return;
-    }
-
-    if (!activeTrading.activeSymbol?.underlying_symbol) {
-      setBotMessage('Market is still loading.');
-      return;
-    }
-
-    const amount = Number(stake);
+    const amount = Number(currentStakeRef.current);
     const ticks = Number(duration);
 
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setBotMessage('Enter a valid stake.');
-      return;
-    }
-
-    if (!Number.isFinite(ticks) || ticks <= 0) {
-      setBotMessage('Enter a valid duration.');
-      return;
-    }
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    if (!Number.isFinite(ticks) || ticks <= 0) return null;
 
     const needsDigitBarrier =
       botContract === 'DIGITMATCH' ||
@@ -217,11 +251,10 @@ export function DBotWorkspace({
     const digitValue = Number(selectedDigit);
 
     if (needsDigitBarrier && (!Number.isFinite(digitValue) || digitValue < 0 || digitValue > 9)) {
-      setBotMessage('Digit prediction must be from 0 to 9.');
-      return;
+      return null;
     }
 
-    const params: ProposalParams = {
+    return {
       contractType: botContract,
       symbol: activeTrading.activeSymbol.underlying_symbol,
       amount,
@@ -231,23 +264,195 @@ export function DBotWorkspace({
       currency: 'USD',
       ...(needsDigitBarrier ? { barrier: digitValue } : {}),
     };
+  }, [activeTrading.activeSymbol?.underlying_symbol, botContract, duration, selectedDigit]);
 
-    setIsBotRunning(true);
+  const placeNextTrade = useCallback(async () => {
+    if (!isBotRunningRef.current) return;
+    if (isPlacingTradeRef.current) return;
+    if (pendingContractIdRef.current !== null) return;
+    if (isBuying) return;
+
+    if (!isAuthorized) {
+      setBotMessage('Please login before starting the bot.');
+      setIsBotRunning(false);
+      return;
+    }
+
+    const params = buildBotParams();
+
+    if (!params) {
+      setBotMessage('Bot settings are not valid.');
+      setIsBotRunning(false);
+      return;
+    }
+
+    isPlacingTradeRef.current = true;
+    setBotMessage('Placing trade...');
 
     try {
       await buyContractFromParams(params);
-      setBotMessage('Trade placed. Entry marker will show on the chart.');
-    } catch (error) {
-      console.error('D BOT buy failed:', error);
-      setBotMessage(error instanceof Error ? error.message : 'Bot failed to place trade.');
-      setIsBotRunning(false);
+    } finally {
+      isPlacingTradeRef.current = false;
     }
+  }, [buildBotParams, buyContractFromParams, isAuthorized, isBuying]);
+
+  useEffect(() => {
+    if (!buyResult?.contractId) return;
+    if (!isBotRunningRef.current) return;
+
+    pendingContractIdRef.current = buyResult.contractId;
+    setBotMessage(`Trade #${buyResult.contractId} placed. Waiting for result...`);
+
+    setStats((prev) => ({
+      ...prev,
+      trades: prev.trades + 1,
+    }));
+  }, [buyResult?.contractId]);
+
+  useEffect(() => {
+    if (!buyError) return;
+    setBotMessage(buyError);
+    isPlacingTradeRef.current = false;
+  }, [buyError]);
+
+  useEffect(() => {
+    const pendingId = pendingContractIdRef.current;
+    if (!pendingId) return;
+
+    const position = activeTrading.openPositions.find((item) => item.contract_id === pendingId);
+    if (!position) return;
+
+    const isClosed =
+      Boolean(position.is_sold) ||
+      Boolean(position.is_expired) ||
+      position.status !== 'open';
+
+    if (!isClosed) return;
+
+    if (processedContractsRef.current.has(pendingId)) return;
+    processedContractsRef.current.add(pendingId);
+    pendingContractIdRef.current = null;
+
+    const profit = Number(position.profit ?? 0);
+    const isWin = profit > 0;
+    const isLoss = profit < 0;
+
+    const initialStake = Number(stake) || 1;
+    const martingaleMultiplier = Number(multiplier) || 2;
+    const maxStakeAmount = Number(maxStake) || 50;
+    const targetProfit = Number(profitTarget) || 0;
+    const maxLossAmount = Number(lossLimit) || 0;
+
+    let shouldContinue = isBotRunningRef.current;
+    let nextStake = currentStakeRef.current;
+
+    setStats((prev) => {
+      const nextProfit = roundMoney(prev.profit + profit);
+
+      const nextStats = {
+        trades: prev.trades,
+        wins: prev.wins + (isWin ? 1 : 0),
+        losses: prev.losses + (isLoss ? 1 : 0),
+        profit: nextProfit,
+      };
+
+      if (targetProfit > 0 && nextProfit >= targetProfit) {
+        shouldContinue = false;
+        setBotMessage(`Profit target reached: $${nextProfit.toFixed(2)}.`);
+      }
+
+      if (maxLossAmount > 0 && nextProfit <= -Math.abs(maxLossAmount)) {
+        shouldContinue = false;
+        setBotMessage(`Loss limit reached: $${nextProfit.toFixed(2)}.`);
+      }
+
+      return nextStats;
+    });
+
+    if (botType === 'martingale') {
+      if (isWin) {
+        nextStake = initialStake;
+      } else if (isLoss) {
+        nextStake = roundMoney(currentStakeRef.current * martingaleMultiplier);
+      }
+
+      if (nextStake > maxStakeAmount) {
+        nextStake = initialStake;
+        shouldContinue = false;
+        setBotMessage('Max stake reached. Bot stopped and stake reset.');
+      }
+    } else {
+      nextStake = initialStake;
+    }
+
+    setCurrentStake(nextStake);
+    currentStakeRef.current = nextStake;
+
+    if (!shouldContinue) {
+      setIsBotRunning(false);
+      isBotRunningRef.current = false;
+      return;
+    }
+
+    setBotMessage(
+      `${isWin ? 'Win' : isLoss ? 'Loss' : 'Break even'}: $${profit.toFixed(2)}. Next trade starting...`
+    );
+
+    if (nextTradeTimerRef.current) clearTimeout(nextTradeTimerRef.current);
+
+    nextTradeTimerRef.current = setTimeout(() => {
+      placeNextTrade();
+    }, 700);
+  }, [
+    activeTrading.openPositions,
+    botType,
+    lossLimit,
+    maxStake,
+    multiplier,
+    placeNextTrade,
+    profitTarget,
+    stake,
+  ]);
+
+  function handleStartBot() {
+    setBotMessage('');
+    processedContractsRef.current.clear();
+    pendingContractIdRef.current = null;
+
+    const initialStake = Number(stake) || 1;
+    setCurrentStake(initialStake);
+    currentStakeRef.current = initialStake;
+
+    setStats({
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      profit: 0,
+    });
+
+    setIsBotRunning(true);
+    isBotRunningRef.current = true;
+
+    setTimeout(() => {
+      placeNextTrade();
+    }, 100);
   }
 
   function handleStopBot() {
     setIsBotRunning(false);
+    isBotRunningRef.current = false;
+    pendingContractIdRef.current = null;
+    isPlacingTradeRef.current = false;
+
+    if (nextTradeTimerRef.current) {
+      clearTimeout(nextTradeTimerRef.current);
+      nextTradeTimerRef.current = null;
+    }
+
     setBotMessage('Bot stopped.');
   }
+
+  const winRate = stats.trades > 0 ? Math.round((stats.wins / stats.trades) * 100) : 0;
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 pb-24 pt-4">
@@ -348,13 +553,13 @@ export function DBotWorkspace({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Stake</Label>
-              <Input value={stake} onChange={(event) => setStake(event.target.value)} />
+              <Label>Initial stake</Label>
+              <Input value={stake} onChange={(event) => setStake(event.target.value)} disabled={isBotRunning} />
             </div>
 
             <div className="space-y-2">
               <Label>Duration ticks</Label>
-              <Input value={duration} onChange={(event) => setDuration(event.target.value)} />
+              <Input value={duration} onChange={(event) => setDuration(event.target.value)} disabled={isBotRunning} />
             </div>
 
             {isDigitsMarket && (
@@ -366,6 +571,7 @@ export function DBotWorkspace({
                   max={9}
                   value={selectedDigit}
                   onChange={(event) => setSelectedDigit(event.target.value)}
+                  disabled={isBotRunning}
                 />
               </div>
             )}
@@ -374,22 +580,22 @@ export function DBotWorkspace({
               <>
                 <div className="space-y-2">
                   <Label>Multiplier</Label>
-                  <Input value={multiplier} onChange={(event) => setMultiplier(event.target.value)} />
+                  <Input value={multiplier} onChange={(event) => setMultiplier(event.target.value)} disabled={isBotRunning} />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Max stake</Label>
-                  <Input value={maxStake} onChange={(event) => setMaxStake(event.target.value)} />
+                  <Input value={maxStake} onChange={(event) => setMaxStake(event.target.value)} disabled={isBotRunning} />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Profit target</Label>
-                  <Input value={profitTarget} onChange={(event) => setProfitTarget(event.target.value)} />
+                  <Input value={profitTarget} onChange={(event) => setProfitTarget(event.target.value)} disabled={isBotRunning} />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Loss limit</Label>
-                  <Input value={lossLimit} onChange={(event) => setLossLimit(event.target.value)} />
+                  <Input value={lossLimit} onChange={(event) => setLossLimit(event.target.value)} disabled={isBotRunning} />
                 </div>
               </>
             )}
@@ -426,30 +632,47 @@ export function DBotWorkspace({
       <div className="rounded-2xl border bg-card p-4 shadow-sm">
         <h2 className="mb-4 text-lg font-bold">Bot Statistics</h2>
 
-        <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-6">
           <div className="rounded-xl border bg-background p-3">
-            <p className="text-muted-foreground">Selected market</p>
-            <p className="font-bold">{getMarketLabel(botMarket)}</p>
+            <p className="text-muted-foreground">Trades taken</p>
+            <p className="font-bold">{stats.trades}</p>
           </div>
 
           <div className="rounded-xl border bg-background p-3">
-            <p className="text-muted-foreground">Symbol</p>
-            <p className="font-bold">{findSymbolName(activeTrading.activeSymbol)}</p>
+            <p className="text-muted-foreground">Wins</p>
+            <p className="font-bold">{stats.wins}</p>
+          </div>
+
+          <div className="rounded-xl border bg-background p-3">
+            <p className="text-muted-foreground">Losses</p>
+            <p className="font-bold">{stats.losses}</p>
+          </div>
+
+          <div className="rounded-xl border bg-background p-3">
+            <p className="text-muted-foreground">Win rate</p>
+            <p className="font-bold">{winRate}%</p>
+          </div>
+
+          <div className="rounded-xl border bg-background p-3">
+            <p className="text-muted-foreground">Profit</p>
+            <p className="font-bold">${stats.profit.toFixed(2)}</p>
+          </div>
+
+          <div className="rounded-xl border bg-background p-3">
+            <p className="text-muted-foreground">Current stake</p>
+            <p className="font-bold">${currentStake.toFixed(2)}</p>
+          </div>
+        </div>
+
+        <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+          <div className="rounded-xl border bg-background p-3">
+            <p className="text-muted-foreground">Selected market</p>
+            <p className="font-bold">{getMarketLabel(botMarket)} — {findSymbolName(activeTrading.activeSymbol)}</p>
           </div>
 
           <div className="rounded-xl border bg-background p-3">
             <p className="text-muted-foreground">Open trades</p>
             <p className="font-bold">{activeTrading.openPositions.length}</p>
-          </div>
-
-          <div className="rounded-xl border bg-background p-3">
-            <p className="text-muted-foreground">Bot type</p>
-            <p className="font-bold">{botType === 'martingale' ? 'Martingale' : 'Normal'}</p>
-          </div>
-
-          <div className="rounded-xl border bg-background p-3">
-            <p className="text-muted-foreground">Current stake</p>
-            <p className="font-bold">${stake}</p>
           </div>
         </div>
       </div>
