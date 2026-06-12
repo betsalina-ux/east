@@ -57,7 +57,9 @@ function getAuthConfig(): AuthConfig {
 
 function base64UrlEncode(bytes: Uint8Array): string {
   let binary = '';
-  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
@@ -102,10 +104,12 @@ async function startDerivOAuth(config: AuthConfig, signUp = false): Promise<void
 
   if (signUp) {
     params.set('prompt', 'registration');
+
     if (config.affiliateToken) {
       const tokenParam = config.affiliateTokenParam ?? 't';
       params.set(tokenParam, config.affiliateToken);
     }
+
     if (config.utmSource) params.set('utm_source', config.utmSource);
     if (config.utmMedium) params.set('utm_medium', config.utmMedium);
     if (config.utmCampaign) params.set('utm_campaign', config.utmCampaign);
@@ -162,7 +166,9 @@ async function exchangeCodeManually(code: string): Promise<AuthInfo> {
     access_token: tokenData.access_token,
     token_type: tokenData.token_type ?? 'Bearer',
     expires_in: tokenData.expires_in ?? 3600,
-    expires_at: tokenData.expires_at ?? Math.floor(Date.now() / 1000) + (tokenData.expires_in ?? 3600),
+    expires_at:
+      tokenData.expires_at ??
+      Math.floor(Date.now() / 1000) + (tokenData.expires_in ?? 3600),
     scope: tokenData.scope ?? config.scopes ?? 'trade account_manage',
     refresh_token: tokenData.refresh_token ?? '',
   };
@@ -191,46 +197,64 @@ export function useAuth(): UseAuthReturn {
   const [authState, setAuthState] = useState<AuthState>(() =>
     typeof window !== 'undefined' && getAuthInfo() ? 'authenticated' : 'unauthenticated'
   );
+
   const [accounts, setAccounts] = useState<DerivAccount[]>(() => {
     if (typeof window === 'undefined') return [];
     return getDerivAccounts() ?? [];
   });
+
   const [activeAccountId, setActiveAccountIdState] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     return getActiveLoginId() ?? null;
   });
+
   const [wsUrl, setWsUrl] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+
   const initRef = useRef(false);
   const activeAccountIdRef = useRef<string | null>(null);
   const tabHiddenAtRef = useRef<number | null>(null);
 
-  const fetchOTPUrl = useCallback(async (accountId: string, authInfo: AuthInfo): Promise<string> => {
-    return getWebSocketOTP(accountId, authInfo, getAuthConfig().clientId);
-  }, []);
+  const fetchOTPUrl = useCallback(
+    async (accountId: string, authInfo: AuthInfo): Promise<string> => {
+      return getWebSocketOTP(accountId, authInfo, getAuthConfig().clientId);
+    },
+    []
+  );
 
-  const completeAuth = useCallback(async (authInfo: AuthInfo) => {
-    try {
-      const fetchedAccounts = await fetchAccounts(authInfo, getAuthConfig().clientId);
-      setAccounts(fetchedAccounts);
-      localStorage.setItem('deriv_accounts', JSON.stringify(fetchedAccounts));
+  const completeAuth = useCallback(
+    async (authInfo: AuthInfo) => {
+      try {
+        const fetchedAccounts = await fetchAccounts(authInfo, getAuthConfig().clientId);
 
-      if (fetchedAccounts.length > 0) {
-        const firstAccount = fetchedAccounts[0];
-        setActiveLoginId(firstAccount.account_id);
-        setActiveAccountIdState(firstAccount.account_id);
-        const otpUrl = await fetchOTPUrl(firstAccount.account_id, authInfo);
-        setWsUrl(otpUrl);
+        setAccounts(fetchedAccounts);
+        localStorage.setItem('deriv_accounts', JSON.stringify(fetchedAccounts));
+
+        if (fetchedAccounts.length > 0) {
+          const savedLoginId = getActiveLoginId();
+
+          const selectedAccount =
+            fetchedAccounts.find((account) => account.account_id === savedLoginId) ??
+            fetchedAccounts[0];
+
+          setActiveLoginId(selectedAccount.account_id);
+          setAccountType(selectedAccount.account_type);
+          setActiveAccountIdState(selectedAccount.account_id);
+
+          const otpUrl = await fetchOTPUrl(selectedAccount.account_id, authInfo);
+          setWsUrl(otpUrl);
+        }
+
+        setAuthState('authenticated');
+        setError(null);
+      } catch (err) {
+        console.error('completeAuth failed:', err);
+        setAuthState('authenticated');
+        setError(err instanceof Error ? err.message : 'Account fetch failed');
       }
-
-      setAuthState('authenticated');
-      setError(null);
-    } catch (err) {
-      console.error('completeAuth failed:', err);
-      setAuthState('authenticated');
-      setError(err instanceof Error ? err.message : 'Account fetch failed');
-    }
-  }, [fetchOTPUrl]);
+    },
+    [fetchOTPUrl]
+  );
 
   useEffect(() => {
     if (initRef.current) return;
@@ -250,6 +274,7 @@ export function useAuth(): UseAuthReturn {
 
       if (code) {
         setAuthState('authenticating');
+
         try {
           const authInfo = await exchangeCodeManually(code);
           await completeAuth(authInfo);
@@ -258,42 +283,34 @@ export function useAuth(): UseAuthReturn {
           setError(err instanceof Error ? err.message : 'Authentication failed');
           setAuthState('error');
         }
+
         return;
       }
 
       const storedAuth = getAuthInfo();
+
       if (storedAuth) {
         if (storedAuth.expires_at && Date.now() / 1000 > storedAuth.expires_at) {
           try {
-            const refreshed = await refreshAccessToken(storedAuth.refresh_token, getAuthConfig().clientId);
+            const refreshed = await refreshAccessToken(
+              storedAuth.refresh_token,
+              getAuthConfig().clientId
+            );
             await completeAuth(refreshed);
           } catch {
             clearAllAuthData();
             setAuthState('unauthenticated');
           }
+
           return;
         }
 
-        const storedAccounts = getDerivAccounts();
-        if (storedAccounts && storedAccounts.length > 0) {
-          setAccounts(storedAccounts);
-          const loginId = getActiveLoginId() ?? storedAccounts[0].account_id;
-          setActiveAccountIdState(loginId);
-          try {
-            const otpUrl = await fetchOTPUrl(loginId, storedAuth);
-            setWsUrl(otpUrl);
-            setAuthState('authenticated');
-          } catch {
-            setAuthState('authenticated');
-          }
-        } else {
-          await completeAuth(storedAuth);
-        }
+        await completeAuth(storedAuth);
       }
     };
 
     init();
-  }, [completeAuth, fetchOTPUrl]);
+  }, [completeAuth]);
 
   useEffect(() => {
     activeAccountIdRef.current = activeAccountId;
@@ -307,12 +324,16 @@ export function useAuth(): UseAuthReturn {
         tabHiddenAtRef.current = Date.now();
         return;
       }
+
       const hiddenAt = tabHiddenAtRef.current;
+
       if (!hiddenAt || Date.now() - hiddenAt < 30_000) return;
+
       tabHiddenAtRef.current = null;
 
       const accountId = activeAccountIdRef.current;
       const authInfo = getAuthInfo();
+
       if (!authInfo || !accountId) return;
 
       try {
@@ -324,25 +345,34 @@ export function useAuth(): UseAuthReturn {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [authState, fetchOTPUrl]);
 
-
   const refreshAccounts = useCallback(async () => {
     const authInfo = getAuthInfo();
+
     if (!authInfo) return;
 
     try {
       const fetchedAccounts = await fetchAccounts(authInfo, getAuthConfig().clientId);
+
       setAccounts(fetchedAccounts);
       localStorage.setItem('deriv_accounts', JSON.stringify(fetchedAccounts));
 
       const currentLoginId = getActiveLoginId();
 
       if (currentLoginId && fetchedAccounts.some((a) => a.account_id === currentLoginId)) {
+        const currentAccount = fetchedAccounts.find((a) => a.account_id === currentLoginId);
+
+        if (currentAccount) {
+          setAccountType(currentAccount.account_type);
+        }
+
         setActiveAccountIdState(currentLoginId);
       } else if (fetchedAccounts.length > 0) {
         setActiveLoginId(fetchedAccounts[0].account_id);
+        setAccountType(fetchedAccounts[0].account_type);
         setActiveAccountIdState(fetchedAccounts[0].account_id);
       }
     } catch (err) {
@@ -352,6 +382,7 @@ export function useAuth(): UseAuthReturn {
 
   useEffect(() => {
     window.addEventListener('marketeye:refresh-accounts', refreshAccounts);
+
     return () => window.removeEventListener('marketeye:refresh-accounts', refreshAccounts);
   }, [refreshAccounts]);
 
@@ -372,22 +403,47 @@ export function useAuth(): UseAuthReturn {
     setError(null);
   }, []);
 
-  const switchAccount = useCallback(async (accountId: string) => {
-    const authInfo = getAuthInfo();
-    if (!authInfo) return;
-    try {
-      const account = accounts.find((a) => a.account_id === accountId);
-      if (account) setAccountType(account.account_type);
-      const otpUrl = await fetchOTPUrl(accountId, authInfo);
-      setActiveLoginId(accountId);
-      setActiveAccountIdState(accountId);
-      setWsUrl(otpUrl);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Account switch failed');
-    }
-  }, [fetchOTPUrl, accounts]);
+  const switchAccount = useCallback(
+    async (accountId: string) => {
+      const authInfo = getAuthInfo();
 
-  const activeAccount = accounts.find((acc) => acc.account_id === activeAccountId) ?? accounts[0] ?? null;
+      if (!authInfo) return;
 
-  return { authState, accounts, activeAccount, activeAccountId, wsUrl, login, signUp, logout, switchAccount, refreshAccounts, error };
+      try {
+        const account = accounts.find((a) => a.account_id === accountId);
+
+        if (account) {
+          setAccountType(account.account_type);
+        }
+
+        const otpUrl = await fetchOTPUrl(accountId, authInfo);
+
+        setActiveLoginId(accountId);
+        setActiveAccountIdState(accountId);
+        setWsUrl(otpUrl);
+
+        await refreshAccounts();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Account switch failed');
+      }
+    },
+    [fetchOTPUrl, accounts, refreshAccounts]
+  );
+
+  const activeAccount =
+    accounts.find((acc) => acc.account_id === activeAccountId) ?? accounts[0] ?? null;
+
+  return {
+    authState,
+    accounts,
+    activeAccount,
+    activeAccountId,
+    wsUrl,
+    login,
+    signUp,
+    logout,
+    switchAccount,
+    refreshAccounts,
+    error,
+  };
 }
