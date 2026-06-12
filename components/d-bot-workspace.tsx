@@ -261,8 +261,7 @@ export function DBotWorkspace({
 
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
         <div className="rounded-2xl border bg-card p-4 shadow-sm">
-          <h2 className="mb-4 text-lg font-bold">Market</h2>
-
+        
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Market type</Label>
