@@ -7,7 +7,12 @@ import { useSmartChartsApi } from '@/hooks/use-smartcharts-api';
 import { useSmartChartChartData } from '@/hooks/use-smartchart-chart-data';
 import { useRiseFallTrading } from '@/hooks/use-rise-fall-trading';
 import { useDigitsTrading } from '@/hooks/use-digits-trading';
-import { RiseFallChart } from '@/components/rise-fall-chart';
+import dynamic from 'next/dynamic';
+
+const RiseFallChart = dynamic(
+  () => import('@/components/rise-fall-chart').then((mod) => mod.RiseFallChart),
+  { ssr: false }
+);
 import { SymbolSelector } from '@/components/custom/symbol-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
