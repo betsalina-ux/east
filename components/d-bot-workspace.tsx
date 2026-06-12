@@ -238,25 +238,25 @@ export function DBotWorkspace({
           </div>
         </div>
 
-        <div className="h-[320px] overflow-hidden rounded-xl border bg-background sm:h-[420px]">
-          {activeTrading.activeSymbol?.underlying_symbol ? (
-            <RiseFallChart
-              symbolKey={activeTrading.activeSymbol.underlying_symbol}
-              symbol={activeTrading.activeSymbol.underlying_symbol}
-              isConnectionOpened={activeTrading.isConnected}
-              isMobile={isMobile}
-              chartData={chartData}
-              getQuotes={getQuotes}
-              subscribeQuotes={subscribeQuotes}
-              unsubscribeQuotes={unsubscribeQuotes}
-              onSymbolChange={activeTrading.selectSymbol}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Loading chart...
-            </div>
-          )}
-        </div>
+        <div className="h-[45dvh] min-h-[360px] overflow-hidden rounded-xl border bg-background lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
+  {chartData && activeTrading.activeSymbol?.underlying_symbol ? (
+    <RiseFallChart
+      symbolKey={`d-bot-chart-${activeTrading.activeSymbol.underlying_symbol}`}
+      symbol={activeTrading.activeSymbol.underlying_symbol}
+      isConnectionOpened={activeTrading.isConnected}
+      isMobile={isMobile}
+      chartData={chartData}
+      getQuotes={getQuotes}
+      subscribeQuotes={subscribeQuotes}
+      unsubscribeQuotes={unsubscribeQuotes}
+      onSymbolChange={activeTrading.selectSymbol}
+    />
+  ) : (
+    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+      Loading chart...
+    </div>
+  )}
+</div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
