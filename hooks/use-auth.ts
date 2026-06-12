@@ -227,6 +227,8 @@ export function useAuth(): UseAuthReturn {
       try {
         const fetchedAccounts = await fetchAccounts(authInfo, getAuthConfig().clientId);
 
+        console.log('DERIV ACCOUNTS', fetchedAccounts);
+
         setAccounts(fetchedAccounts);
         localStorage.setItem('deriv_accounts', JSON.stringify(fetchedAccounts));
 
@@ -355,12 +357,14 @@ export function useAuth(): UseAuthReturn {
     if (!authInfo) return;
 
     try {
+      const currentLoginId = getActiveLoginId();
+
       const fetchedAccounts = await fetchAccounts(authInfo, getAuthConfig().clientId);
+
+      console.log('DERIV ACCOUNTS REFRESHED', fetchedAccounts);
 
       setAccounts(fetchedAccounts);
       localStorage.setItem('deriv_accounts', JSON.stringify(fetchedAccounts));
-
-      const currentLoginId = getActiveLoginId();
 
       if (currentLoginId && fetchedAccounts.some((a) => a.account_id === currentLoginId)) {
         const currentAccount = fetchedAccounts.find((a) => a.account_id === currentLoginId);
@@ -409,29 +413,36 @@ export function useAuth(): UseAuthReturn {
 
       if (!authInfo) return;
 
-      try {
-        const account = accounts.find((a) => a.account_id === accountId);
+      const account = accounts.find((a) => a.account_id === accountId);
 
-        if (account) {
-          setAccountType(account.account_type);
-        }
+      if (!account) return;
+
+      try {
+        setActiveLoginId(accountId);
+        setAccountType(account.account_type);
+        setActiveAccountIdState(accountId);
 
         const otpUrl = await fetchOTPUrl(accountId, authInfo);
 
-        setActiveLoginId(accountId);
-        setActiveAccountIdState(accountId);
         setWsUrl(otpUrl);
-
-        await refreshAccounts();
+        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Account switch failed');
+        console.error('Account switch failed:', err);
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Account switch failed'
+        );
       }
     },
-    [fetchOTPUrl, accounts, refreshAccounts]
+    [fetchOTPUrl, accounts]
   );
 
   const activeAccount =
-    accounts.find((acc) => acc.account_id === activeAccountId) ?? accounts[0] ?? null;
+    activeAccountId
+      ? accounts.find((acc) => acc.account_id === activeAccountId) ?? null
+      : accounts[0] ?? null;
 
   return {
     authState,
