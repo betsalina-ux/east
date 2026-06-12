@@ -204,7 +204,7 @@ function DigitsTemplate() {
 }
 
 function DBotTemplate() {
-  const { ws, isConnected, isAuthorized, auth } = useDerivWSContext();
+  const { ws, isConnected, isExhausted, isAuthorized, auth } = useDerivWSContext();
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
   return (
@@ -229,13 +229,13 @@ function DBotTemplate() {
         }
       />
 
-      <div className="flex flex-1 items-start justify-center px-4 pb-20 pt-6">
-        <DBotManager
-          ws={ws}
-          isConnected={isConnected}
-          isAuthorized={isAuthorized}
-        />
-      </div>
+      <DBotWorkspace
+        ws={ws}
+        isConnected={isConnected}
+        isExhausted={isExhausted}
+        isAuthorized={isAuthorized}
+        onAuthWSFailed={logout}
+      />
 
       <div className="fixed bottom-0 left-0 right-0 bg-background/80 py-2 text-center backdrop-blur-sm">
         <Footer />
