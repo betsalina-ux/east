@@ -20,17 +20,14 @@ interface HeaderProps {
 }
 
 function formatBalance(balance: string | number): string {
-  const amount = Number(balance ?? 0);
-
-  return amount.toLocaleString('en-US', {
+  return Number(balance ?? 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
 function getAccountName(account: DerivAccount) {
-  if (account.account_type === 'demo') return 'Demo account';
-  return 'Real account';
+  return account.account_type === 'demo' ? 'Demo account' : 'Real account';
 }
 
 function AccountLabel({ account }: { account: DerivAccount }) {
@@ -68,11 +65,8 @@ export function Header({
   const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false);
   const [switchingAccountId, setSwitchingAccountId] = useState<string | null>(null);
 
-  const logoLetter =
-    (appName ?? process.env.NEXT_PUBLIC_DERIV_APP_NAME ?? 'Deriv Trading')
-      .trim()
-      .charAt(0)
-      .toUpperCase() || 'D';
+  const appTitle = appName ?? process.env.NEXT_PUBLIC_DERIV_APP_NAME ?? 'MarketEye';
+  const logoLetter = appTitle.trim().charAt(0).toUpperCase() || 'M';
 
   const isAuthenticated = authState === 'authenticated';
   const isAuthenticating = authState === 'authenticating';
@@ -137,24 +131,29 @@ export function Header({
   }
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b bg-background/80 px-4 py-3 backdrop-blur-sm">
+    <header className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b bg-background/90 px-4 py-3 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         {!logoSrc || logoError ? (
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-primary/10 text-sm font-bold text-primary">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
             {logoLetter}
           </div>
         ) : (
           <img
             src={logoSrc}
             alt="App Logo"
-            className="h-8 w-auto object-contain"
+            className="h-10 w-auto object-contain"
             onError={() => setLogoError(true)}
           />
         )}
 
-        <h1 className="hidden text-lg font-semibold text-foreground sm:block">
-          {process.env.NEXT_PUBLIC_DERIV_APP_NAME ?? 'Deriv Trading'}
-        </h1>
+        <div className="hidden sm:block">
+          <h1 className="text-lg font-bold leading-tight text-foreground">
+            {appTitle}
+          </h1>
+          <p className="text-xs font-medium text-muted-foreground">
+            Powered by <span className="font-semibold text-foreground">Deriv</span>
+          </p>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
@@ -194,10 +193,7 @@ export function Header({
                     <p className="px-3 pb-1 text-xs font-bold uppercase text-muted-foreground">
                       Demo wallets
                     </p>
-
-                    <div className="space-y-1">
-                      {demoAccounts.map(renderAccountButton)}
-                    </div>
+                    <div className="space-y-1">{demoAccounts.map(renderAccountButton)}</div>
                   </div>
                 )}
 
@@ -206,16 +202,7 @@ export function Header({
                     <p className="px-3 pb-1 text-xs font-bold uppercase text-muted-foreground">
                       Real wallets
                     </p>
-
-                    <div className="space-y-1">
-                      {realAccounts.map(renderAccountButton)}
-                    </div>
-                  </div>
-                )}
-
-                {accounts.length === 0 && (
-                  <div className="rounded-lg border p-3 text-sm text-muted-foreground">
-                    No wallets found. Logout and login again.
+                    <div className="space-y-1">{realAccounts.map(renderAccountButton)}</div>
                   </div>
                 )}
               </div>
