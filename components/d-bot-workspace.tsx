@@ -181,10 +181,73 @@ export function DBotWorkspace({
           </div>
         </div>
 
-        <div className="h-[360px] overflow-hidden rounded-xl border bg-background sm:h-[480px]">
-          <RiseFallChart
-            symbolKey={activeTrading.activeSymbol?.underlying_symbol ?? 'd-bot-chart'}
-            symbol={activeTrading.activeSymbol?.underlying_symbol}
+        <div className="rounded-2xl border bg-card p-4 shadow-sm">
+  <div className="mb-4 grid gap-4 md:grid-cols-4">
+    <div className="space-y-2">
+      <Label>Market type</Label>
+      <Select value={botMarket} onValueChange={(value) => handleMarketChange(value as BotMarket)}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="rise-fall">Rise/Fall</SelectItem>
+          <SelectItem value="even-odd">Even/Odd</SelectItem>
+          <SelectItem value="matches-differs">Matches/Differs</SelectItem>
+          <SelectItem value="over-under">Over/Under</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div className="space-y-2">
+      <Label>Symbol</Label>
+      <SymbolSelector
+        symbols={activeTrading.symbols}
+        activeSymbol={activeTrading.activeSymbol}
+        onSymbolChange={activeTrading.selectSymbol}
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label>Bot type</Label>
+      <Select value={botType} onValueChange={(value) => setBotType(value as BotType)}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="martingale">Martingale Bot</SelectItem>
+          <SelectItem value="normal">Normal Bot</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div className="space-y-2">
+      <Label>Status</Label>
+      <div className="rounded-xl border bg-background px-3 py-2 text-sm font-bold">
+        {isBotRunning ? 'BOT RUNNING' : 'BOT OFF'}
+      </div>
+    </div>
+  </div>
+
+  <div className="h-[320px] overflow-hidden rounded-xl border bg-background sm:h-[420px]">
+    {activeTrading.activeSymbol?.underlying_symbol ? (
+      <RiseFallChart
+        symbolKey={activeTrading.activeSymbol.underlying_symbol}
+        symbol={activeTrading.activeSymbol.underlying_symbol}
+        isConnectionOpened={activeTrading.isConnected}
+        isMobile={isMobile}
+        chartData={chartData}
+        getQuotes={getQuotes}
+        subscribeQuotes={subscribeQuotes}
+        unsubscribeQuotes={unsubscribeQuotes}
+        onSymbolChange={activeTrading.selectSymbol}
+      />
+    ) : (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        Loading chart...
+      </div>
+    )}
+  </div>
+</div>
             isConnectionOpened={activeTrading.isConnected}
             isMobile={isMobile}
             chartData={chartData}
