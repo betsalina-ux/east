@@ -2,12 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
-import type { DerivWS, ActiveSymbol } from '@deriv/core';
+import { useBuy } from '@deriv/core';
+import type { DerivWS, ActiveSymbol, ProposalParams } from '@deriv/core';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useSmartChartsApi } from '@/hooks/use-smartcharts-api';
 import { useSmartChartChartData } from '@/hooks/use-smartchart-chart-data';
 import { useRiseFallTrading } from '@/hooks/use-rise-fall-trading';
 import { useDigitsTrading } from '@/hooks/use-digits-trading';
+import { useContractMarkers } from '@/hooks/use-contract-markers';
 import { SymbolSelector } from '@/components/custom/symbol-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,6 +114,7 @@ export function DBotWorkspace({
   const [lossLimit, setLossLimit] = useState('2');
   const [selectedDigit, setSelectedDigit] = useState('5');
   const [isBotRunning, setIsBotRunning] = useState(false);
+  const [botMessage, setBotMessage] = useState('');
 
   const riseFall = useRiseFallTrading({
     ws,
@@ -140,6 +143,18 @@ export function DBotWorkspace({
 
   const { getQuotes, subscribeQuotes, unsubscribeQuotes } = useSmartChartsApi(ws);
 
+  const {
+    buyContractFromParams,
+    isBuying,
+    buyError,
+  } = useBuy(ws, isConnected);
+
+  const contractMarkers = useContractMarkers(
+    activeTrading.openPositions,
+    activeTrading.activeSymbol?.underlying_symbol,
+    isMobile
+  );
+
   const contractOptions = useMemo(() => getContractOptions(botMarket), [botMarket]);
 
   function handleMarketChange(value: BotMarket) {
@@ -165,6 +180,73 @@ export function DBotWorkspace({
       digits.setTradeType('over-under');
       digits.setContractMode('DIGITOVER');
     }
+  }
+
+  async function handleStartBot() {
+    setBotMessage('');
+
+    if (!isAuthorized) {
+      setBotMessage('Please login before starting the bot.');
+      return;
+    }
+
+    if (!activeTrading.activeSymbol?.underlying_symbol) {
+      setBotMessage('Market is still loading.');
+      return;
+    }
+
+    const amount = Number(stake);
+    const ticks = Number(duration);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setBotMessage('Enter a valid stake.');
+      return;
+    }
+
+    if (!Number.isFinite(ticks) || ticks <= 0) {
+      setBotMessage('Enter a valid duration.');
+      return;
+    }
+
+    const needsDigitBarrier =
+      botContract === 'DIGITMATCH' ||
+      botContract === 'DIGITDIFF' ||
+      botContract === 'DIGITOVER' ||
+      botContract === 'DIGITUNDER';
+
+    const digitValue = Number(selectedDigit);
+
+    if (needsDigitBarrier && (!Number.isFinite(digitValue) || digitValue < 0 || digitValue > 9)) {
+      setBotMessage('Digit prediction must be from 0 to 9.');
+      return;
+    }
+
+    const params: ProposalParams = {
+      contractType: botContract,
+      symbol: activeTrading.activeSymbol.underlying_symbol,
+      amount,
+      duration: ticks,
+      durationUnit: 't',
+      basis: 'stake',
+      currency: 'USD',
+      ...(needsDigitBarrier ? { barrier: digitValue } : {}),
+    };
+
+    setIsBotRunning(true);
+
+    try {
+      await buyContractFromParams(params);
+      setBotMessage('Trade placed. Entry marker will show on the chart.');
+    } catch (error) {
+      console.error('D BOT buy failed:', error);
+      setBotMessage(error instanceof Error ? error.message : 'Bot failed to place trade.');
+      setIsBotRunning(false);
+    }
+  }
+
+  function handleStopBot() {
+    setIsBotRunning(false);
+    setBotMessage('Bot stopped.');
   }
 
   return (
@@ -239,24 +321,25 @@ export function DBotWorkspace({
         </div>
 
         <div className="h-[45dvh] min-h-[360px] overflow-hidden rounded-xl border bg-background lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
-  {chartData && activeTrading.activeSymbol?.underlying_symbol ? (
-    <RiseFallChart
-      symbolKey={`d-bot-chart-${activeTrading.activeSymbol.underlying_symbol}`}
-      symbol={activeTrading.activeSymbol.underlying_symbol}
-      isConnectionOpened={activeTrading.isConnected}
-      isMobile={isMobile}
-      chartData={chartData}
-      getQuotes={getQuotes}
-      subscribeQuotes={subscribeQuotes}
-      unsubscribeQuotes={unsubscribeQuotes}
-      onSymbolChange={activeTrading.selectSymbol}
-    />
-  ) : (
-    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-      Loading chart...
-    </div>
-  )}
-</div>
+          {chartData && activeTrading.activeSymbol?.underlying_symbol ? (
+            <RiseFallChart
+              symbolKey={`d-bot-chart-${activeTrading.activeSymbol.underlying_symbol}`}
+              symbol={activeTrading.activeSymbol.underlying_symbol}
+              isConnectionOpened={activeTrading.isConnected}
+              isMobile={isMobile}
+              chartData={chartData}
+              getQuotes={getQuotes}
+              subscribeQuotes={subscribeQuotes}
+              unsubscribeQuotes={unsubscribeQuotes}
+              onSymbolChange={activeTrading.selectSymbol}
+              contractsArray={contractMarkers}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Loading chart...
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
@@ -317,11 +400,11 @@ export function DBotWorkspace({
           <h2 className="mb-4 text-lg font-bold">Control</h2>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button type="button" onClick={() => setIsBotRunning(true)} disabled={isBotRunning}>
-              START
+            <Button type="button" onClick={handleStartBot} disabled={isBotRunning || isBuying}>
+              {isBuying ? 'BUYING...' : 'START'}
             </Button>
 
-            <Button type="button" variant="destructive" onClick={() => setIsBotRunning(false)} disabled={!isBotRunning}>
+            <Button type="button" variant="destructive" onClick={handleStopBot} disabled={!isBotRunning}>
               STOP
             </Button>
           </div>
@@ -330,6 +413,13 @@ export function DBotWorkspace({
             <p className="text-muted-foreground">Current status</p>
             <p className="font-bold">{isBotRunning ? 'Bot is running' : 'Bot is stopped'}</p>
           </div>
+
+          {(botMessage || buyError) && (
+            <div className="mt-3 rounded-xl border bg-background p-3 text-sm">
+              <p className="text-muted-foreground">Message</p>
+              <p className="font-medium">{buyError || botMessage}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -348,18 +438,18 @@ export function DBotWorkspace({
           </div>
 
           <div className="rounded-xl border bg-background p-3">
-            <p className="text-muted-foreground">Trades</p>
-            <p className="font-bold">0</p>
+            <p className="text-muted-foreground">Open trades</p>
+            <p className="font-bold">{activeTrading.openPositions.length}</p>
           </div>
 
           <div className="rounded-xl border bg-background p-3">
-            <p className="text-muted-foreground">Wins / Losses</p>
-            <p className="font-bold">0 / 0</p>
+            <p className="text-muted-foreground">Bot type</p>
+            <p className="font-bold">{botType === 'martingale' ? 'Martingale' : 'Normal'}</p>
           </div>
 
           <div className="rounded-xl border bg-background p-3">
-            <p className="text-muted-foreground">Profit</p>
-            <p className="font-bold">$0.00</p>
+            <p className="text-muted-foreground">Current stake</p>
+            <p className="font-bold">${stake}</p>
           </div>
         </div>
       </div>
