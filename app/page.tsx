@@ -8,7 +8,7 @@ import { useDigitsTrading } from '@/hooks/use-digits-trading';
 import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
 import { RiseFallView } from '@/components/rise-fall-view';
 import { DigitsView } from '@/components/digits-view';
-import { DBotManager } from '@/components/d-bot-manager';
+import { DBotWorkspace } from '@/components/d-bot-workspace';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/custom/header';
 import { ThemeToggle } from '@/components/custom/theme-toggle';
