@@ -8,7 +8,7 @@ export default function FAQPage() {
       <div className="space-y-6">
         <div>
           <h2 className="font-bold">How do I deposit funds?</h2>
-          <p>Deposit directly through your Deriv account.</p>
+          <p>After signing up, log in to your Deriv account and make a deposit using any of the available payment methods on Deriv. Once your funds are available in your Deriv account, transfer them to your Deriv Options wallet if required before trading through ChartEye..</p>
         </div>
 
         <div>
