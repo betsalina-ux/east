@@ -146,9 +146,10 @@ export function Header({
         )}
 
         <div className="hidden sm:block">
-          <h1 className="text-lg font-bold leading-tight text-foreground">
-            {appTitle}
-          </h1>
+          <h1 className="text-2xl font-bold leading-tight">
+  <span className="text-[#04184d]">Chart</span>
+  <span className="text-[#20d4c7]">Eye</span>
+</h1>
           <p className="text-xs font-medium text-muted-foreground">
             Powered by <span className="font-semibold text-foreground">Deriv</span>
           </p>
