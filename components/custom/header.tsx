@@ -139,11 +139,10 @@ export function Header({
           </div>
         ) : (
           <img
-            src={logoSrc}
-            alt="App Logo"
-            className="h-10 w-auto object-contain"
-            onError={() => setLogoError(true)}
-          />
+  src="/logo.png"
+  alt="ChartEye Logo"
+  className="h-10 w-auto object-contain"
+/>
         )}
 
         <div className="hidden sm:block">
