@@ -1,25 +1,34 @@
+import Link from 'next/link';
 export function Footer() {
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-[70] border-t bg-background/95 px-6 py-3 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 text-xs text-muted-foreground">
-        <p>© 2025 MarketEye. All rights reserved.</p>
+        <p>© 2026 ChartEye. All rights reserved.</p>
 
-        <div className="flex items-center gap-5">
-          <button type="button" className="hover:text-foreground">
-            About Us
-          </button>
+        <Link
+  href="/about-us"
+  className="hover:text-foreground transition-colors"
+>
+  About Us
+</Link>
 
-          <span className="text-border">|</span>
+<span>|</span>
 
-          <button type="button" className="hover:text-foreground">
-            Terms of Use
-          </button>
+<Link
+  href="/terms-of-use"
+  className="hover:text-foreground transition-colors"
+>
+  Terms of Use
+</Link>
 
-          <span className="text-border">|</span>
+<span>|</span>
 
-          <button type="button" className="hover:text-foreground">
-            FAQ
-          </button>
+<Link
+  href="/faq"
+  className="hover:text-foreground transition-colors"
+>
+  FAQ
+</Link>
         </div>
       </div>
     </footer>
