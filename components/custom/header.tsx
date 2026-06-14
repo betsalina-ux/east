@@ -131,7 +131,7 @@ export function Header({
   }
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b bg-background/90 px-4 py-3 backdrop-blur-sm">
+    <header className="fixed left-0 right-0 top-0 z-50 flex min-h-[64px] items-center justify-between gap-2 border-b bg-background/90 px-2 py-2 backdrop-blur-sm sm:px-4 sm:py-3">
       <div className="flex items-center gap-3">
         {!logoSrc || logoError ? (
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
