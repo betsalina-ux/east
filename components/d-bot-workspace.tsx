@@ -455,7 +455,7 @@ export function DBotWorkspace({
   const winRate = stats.trades > 0 ? Math.round((stats.wins / stats.trades) * 100) : 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 pb-24 pt-4">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-28 pt-3 sm:gap-4 sm:px-4 sm:pt-4">
       <div className="rounded-2xl border bg-card p-4 shadow-sm">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -470,7 +470,7 @@ export function DBotWorkspace({
           </div>
         </div>
 
-        <div className="mb-4 grid gap-4 md:grid-cols-4">
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label>Market type</Label>
             <Select value={botMarket} onValueChange={(value) => handleMarketChange(value as BotMarket)}>
@@ -525,7 +525,7 @@ export function DBotWorkspace({
           </div>
         </div>
 
-        <div className="h-[45dvh] min-h-[360px] overflow-hidden rounded-xl border bg-background lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
+        <div className="h-[42dvh] min-h-[260px] overflow-hidden rounded-xl border bg-background sm:min-h-[340px] lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]">
           {chartData && activeTrading.activeSymbol?.underlying_symbol ? (
             <RiseFallChart
               symbolKey={`d-bot-chart-${activeTrading.activeSymbol.underlying_symbol}`}
@@ -547,11 +547,11 @@ export function DBotWorkspace({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
         <div className="rounded-2xl border bg-card p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-bold">Bot Settings</h2>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Initial stake</Label>
               <Input value={stake} onChange={(event) => setStake(event.target.value)} disabled={isBotRunning} />
