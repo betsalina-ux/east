@@ -224,12 +224,12 @@ function DBotTemplate() {
       <div
         className={
           authState === 'authenticated'
-            ? 'h-[122px] shrink-0 sm:h-[76px]'
-            : 'h-[112px] shrink-0 sm:h-[66px]'
+            ? 'h-[132px] shrink-0 sm:h-[76px]'
+            : 'h-[122px] shrink-0 sm:h-[66px]'
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto pb-24">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <DBotWorkspace
           ws={ws}
           isConnected={isConnected}
@@ -237,9 +237,9 @@ function DBotTemplate() {
           isAuthorized={isAuthorized}
           onAuthWSFailed={logout}
         />
-      </div>
 
-      <Footer />
+        <Footer />
+      </div>
     </main>
   );
 }
