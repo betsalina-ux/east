@@ -146,7 +146,7 @@ export function Header({
         )}
 
         <div className="block min-w-0">
-          <h1 className="text-2xl font-bold leading-tight">
+          <h1 className="text-lg font-bold leading-tight sm:text-2xl">
   <span className="text-[#04184d]">Chart</span>
   <span className="text-[#20d4c7]">Eye</span>
 </h1>
