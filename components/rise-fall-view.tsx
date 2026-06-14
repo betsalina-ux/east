@@ -350,9 +350,9 @@ export function RiseFallView({
       </div>
 
       {/* Fixed footer */}
-      <div className="fixed bottom-0 left-0 right-0 py-2 text-center bg-background/80 backdrop-blur-sm">
-        <Footer />
-      </div>
+      <div className="shrink-0">
+  <Footer />
+</div>
     </main>
   );
 }
