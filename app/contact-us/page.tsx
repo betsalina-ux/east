@@ -27,12 +27,12 @@ export default function ContactUsPage() {
           ← Back
         </Link>
 
-        <section className="relative overflow-hidden rounded-3xl border bg-muted/30 px-4 py-10 sm:px-8">
-          <h2 className="mb-6 text-center text-4xl font-black tracking-wide sm:text-6xl">
+        <section className="relative w-full overflow-hidden rounded-3xl border bg-muted/30 px-4 py-10 sm:px-8">
+         <h2 className="mb-6 text-center text-3xl font-black tracking-wide sm:text-6xl">
             CONTACT US
           </h2>
 
-          <div className="mx-auto max-w-md rounded-3xl bg-background p-6 shadow-xl">
+          <div className="mx-auto w-full max-w-md rounded-3xl bg-background p-6 shadow-xl">
             <form className="space-y-5">
               <div>
                 <label className="mb-2 block text-sm font-medium">Name</label>
