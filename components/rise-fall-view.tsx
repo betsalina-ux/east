@@ -310,7 +310,7 @@ export function RiseFallView({
               <Skeleton className="lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] max-lg:h-48 w-full rounded-xl" />
             ) : (
               <Card className="max-lg:h-full max-lg:overflow-y-auto lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
-                <CardContent className="pt-4 pb-32">
+                <CardContent className="pt-4 pb-40 sm:pb-32">
                   <TradeControls
                     contractType={contractType}
                     onContractTypeChange={setContractType}
