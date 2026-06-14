@@ -1,6 +1,10 @@
+import Link from 'next/link';
 export default function TermsPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
+      <Link href="/" className="mb-4 inline-flex rounded-lg border px-4 py-2 text-sm font-bold hover:bg-muted">
+  ← Back
+</Link>
       <h1 className="mb-6 text-3xl font-bold">Terms of Use</h1>
 
       <p className="mb-4">
