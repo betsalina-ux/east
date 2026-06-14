@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export function Footer() {
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-[70] border-t bg-background/95 px-3 py-2 backdrop-blur-sm sm:px-6 sm:py-3">
+    <footer className="shrink-0 border-t bg-background/95 px-3 py-3 backdrop-blur-sm sm:px-6">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 text-center text-[11px] text-muted-foreground sm:flex-row sm:text-xs">
         <p>© 2026 ChartEye. All rights reserved.</p>
 
