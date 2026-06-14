@@ -24,12 +24,12 @@ function TemplateTabs({
   onChange: (value: TemplateKey) => void;
 }) {
   return (
-    <div className="fixed left-4 top-[72px] z-40 flex gap-2 rounded-full border border-border/70 bg-background/95 p-1 shadow-lg backdrop-blur sm:left-1/2 sm:top-2 sm:z-[60] sm:-translate-x-1/2">
+    <div className="fixed left-2 right-2 top-[76px] z-40 flex max-w-full gap-1 overflow-x-auto rounded-full border border-border/70 bg-background/95 p-1 shadow-lg backdrop-blur sm:left-1/2 sm:right-auto sm:top-2 sm:z-[60] sm:-translate-x-1/2">
       <Button
         type="button"
         size="sm"
         variant={active === 'up-down' ? 'default' : 'ghost'}
-        className="rounded-full px-4 font-bold"
+        className="shrink-0 rounded-full px-3 text-xs font-bold sm:px-4 sm:text-sm"
         onClick={() => onChange('up-down')}
       >
         Up/Down
@@ -39,7 +39,7 @@ function TemplateTabs({
         type="button"
         size="sm"
         variant={active === 'digits' ? 'default' : 'ghost'}
-        className="rounded-full px-4 font-bold"
+        className="shrink-0 rounded-full px-3 text-xs font-bold sm:px-4 sm:text-sm"
         onClick={() => onChange('digits')}
       >
         Digits Market
@@ -49,7 +49,7 @@ function TemplateTabs({
         type="button"
         size="sm"
         variant={active === 'd-bot' ? 'default' : 'ghost'}
-        className="rounded-full px-4 font-bold"
+        className="shrink-0 rounded-full px-3 text-xs font-bold sm:px-4 sm:text-sm"
         onClick={() => onChange('d-bot')}
       >
         D BOT
@@ -208,7 +208,7 @@ function DBotTemplate() {
   const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
 
   return (
-    <main className="flex min-h-dvh flex-col bg-background">
+    <main className="flex h-dvh min-h-dvh flex-col overflow-hidden bg-background">
       <Header
         authState={authState}
         accounts={accounts}
@@ -229,17 +229,17 @@ function DBotTemplate() {
         }
       />
 
-      <DBotWorkspace
-        ws={ws}
-        isConnected={isConnected}
-        isExhausted={isExhausted}
-        isAuthorized={isAuthorized}
-        onAuthWSFailed={logout}
-      />
-
-      <div className="fixed bottom-0 left-0 right-0 bg-background/80 py-2 text-center backdrop-blur-sm">
-        <Footer />
+      <div className="min-h-0 flex-1 overflow-y-auto pb-24">
+        <DBotWorkspace
+          ws={ws}
+          isConnected={isConnected}
+          isExhausted={isExhausted}
+          isAuthorized={isAuthorized}
+          onAuthWSFailed={logout}
+        />
       </div>
+
+      <Footer />
     </main>
   );
 }
