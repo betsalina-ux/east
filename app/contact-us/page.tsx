@@ -19,8 +19,8 @@ function PageLogo() {
 
 export default function ContactUsPage() {
   return (
-    <main className="min-h-dvh overflow-y-auto bg-background px-4 py-6 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen w-full overflow-x-hidden overflow-y-auto bg-background">
+  <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
         <PageLogo />
 
         <Link href="/" className="mb-6 inline-flex rounded-lg border px-4 py-2 text-sm font-bold hover:bg-muted">
