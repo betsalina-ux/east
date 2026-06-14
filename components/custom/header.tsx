@@ -141,7 +141,7 @@ export function Header({
           <img
   src="/logo.png"
   alt="ChartEye Logo"
-  className="h-10 w-auto object-contain"
+  className="h-8 w-auto object-contain sm:h-10 md:h-12"
 />
         )}
 
