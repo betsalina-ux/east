@@ -315,7 +315,7 @@ export function DigitsView({
               </div>
 
               <Card className="shrink-0 border shadow-sm mb-12 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
-                <CardContent className="pt-4 pb-32">
+                <CardContent className="pt-4 pb-40 sm:pb-32">
                   <TradeControls
                     tradeType={tradeType}
                     contractMode={contractMode}
@@ -343,9 +343,9 @@ export function DigitsView({
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 py-2 text-center bg-background/80 backdrop-blur-sm">
-        <Footer />
-      </div>
+      <div className="shrink-0">
+  <Footer />
+</div>
     </main>
   );
 }
