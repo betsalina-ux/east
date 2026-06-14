@@ -145,7 +145,7 @@ export function Header({
 />
         )}
 
-        <div className="hidden sm:block">
+        <div className="block min-w-0">
           <h1 className="text-2xl font-bold leading-tight">
   <span className="text-[#04184d]">Chart</span>
   <span className="text-[#20d4c7]">Eye</span>
