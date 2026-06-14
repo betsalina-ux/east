@@ -29,7 +29,7 @@ import type { OpenPosition } from '../lib/types';
 const RiseFallChart = dynamic(() => import('./rise-fall-chart').then(m => m.RiseFallChart), {
   ssr: false,
   loading: () => (
-    <div className="h-full w-full animate-pulse rounded-md border border-border/50 dark:border-white/[0.08] bg-muted/30" />
+    <div className="h-full w-full animate-pulse rounded-md border border-border/50 bg-muted/30 dark:border-white/[0.08]" />
   ),
 });
 
@@ -40,7 +40,6 @@ const CONTRACT_TABS: { value: UpDownContractType; label: string }[] = [
 ];
 
 export interface RiseFallViewProps {
-  // Auth
   authState: AuthState;
   accounts: DerivAccount[];
   activeAccount: DerivAccount | null;
@@ -51,19 +50,13 @@ export interface RiseFallViewProps {
   currentTick: Tick | null;
   prices: number[];
   pipSize: number;
-
-  // Connection / loading
   ws: DerivWS | null;
   isConnected: boolean;
   isAuthorized?: boolean;
   isLoading: boolean;
   error: string | null;
-
-  // Market data
   activeSymbol: ActiveSymbol | null;
   selectSymbol: (symbol: string) => void;
-
-  // Trade controls
   contractType: UpDownContractType;
   setContractType: (value: UpDownContractType) => void;
   direction: Direction;
@@ -89,91 +82,39 @@ export interface RiseFallViewProps {
   buyResult: BuyResult | null;
   buyError: string | null;
   clearBuyResult: () => void;
-
-  // Positions
   openPositions: OpenPosition[];
   sellContract: (contractId: number, bidPrice: string) => Promise<void>;
   sellingId: number | null;
-
-  // Chart data (elevated to page so preview can inject frozen mocks)
   chartData: SmartChartChartData | undefined;
   getQuotes: UseSmartChartsApiReturn['getQuotes'];
   subscribeQuotes: UseSmartChartsApiReturn['subscribeQuotes'];
   unsubscribeQuotes: UseSmartChartsApiReturn['unsubscribeQuotes'];
-  /** Passed to SmartChart. Set to false for a frozen preview. Defaults to true. */
   isLive?: boolean;
-  /**
-   * Unix epoch (seconds) to freeze the chart at. When set, SmartCharts renders
-   * a static historical snapshot and never sets up a live subscription.
-   */
   endEpoch?: number;
-
-  // Branding (used by preview route; no-op in the real app)
   logoSrc?: string;
   appName?: string;
 }
 
-export function RiseFallView({
-  authState,
-  accounts,
-  activeAccount,
-  onLogin,
-  onSignUp,
-  onLogout,
-  onSwitchAccount,
-  ws,
-  isConnected,
-  isAuthorized,
-  isLoading,
-  error,
-  activeSymbol,
-  selectSymbol,
-  contractType,
-  setContractType,
-  direction,
-  setDirection,
-  allowEquals,
-  setAllowEquals,
-  barrier,
-  setBarrier,
-  stake,
-  setStake,
-  duration,
-  setDuration,
-  durationOptions,
-  durationUnit,
-  setDurationUnit,
-  endDate,
-  setEndDate,
-  endTime,
-  setEndTime,
-  proposal,
-  buyContract,
-  isBuying,
-  buyResult,
-  buyError,
-  clearBuyResult,
-  openPositions,
-  chartData,
-  getQuotes,
-  subscribeQuotes,
-  unsubscribeQuotes,
-  isLive,
-  endEpoch,
-  logoSrc,
-  appName,
-  currentTick,
-  prices,
-  pipSize,
-}: RiseFallViewProps) {
+export function RiseFallView(props: RiseFallViewProps) {
+  const {
+    authState, accounts, activeAccount, onLogin, onSignUp, onLogout, onSwitchAccount,
+    ws, isConnected, isAuthorized, isLoading, error, activeSymbol, selectSymbol,
+    contractType, setContractType, direction, setDirection, allowEquals, setAllowEquals,
+    barrier, setBarrier, stake, setStake, duration, setDuration, durationOptions,
+    durationUnit, setDurationUnit, endDate, setEndDate, endTime, setEndTime,
+    proposal, buyContract, isBuying, buyResult, buyError, clearBuyResult,
+    openPositions, chartData, getQuotes, subscribeQuotes, unsubscribeQuotes,
+    isLive, endEpoch, logoSrc, appName, currentTick, prices, pipSize,
+  } = props;
+
   const isMobile = useIsMobile();
   const [isStrategyPanelOpen, setIsStrategyPanelOpen] = useState(false);
   const contractMarkers = useContractMarkers(openPositions, activeSymbol?.underlying_symbol, isMobile);
 
   if (error) {
     return (
-      <main className="flex flex-col bg-background items-center justify-center px-4 min-h-dvh">
-        <Card className="max-w-md w-full">
+      <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-destructive">Connection Error</CardTitle>
           </CardHeader>
@@ -186,7 +127,7 @@ export function RiseFallView({
   }
 
   return (
-    <main className="flex flex-col bg-background max-lg:h-dvh lg:overflow-visible">
+    <main className="flex min-h-dvh flex-col bg-background">
       <Header
         authState={authState}
         accounts={accounts}
@@ -199,39 +140,29 @@ export function RiseFallView({
         appName={appName}
         actions={<ThemeToggle />}
       />
-      {/* Spacer to push content below fixed header — taller when authenticated (account bar visible) */}
+
       <div className={authState === 'authenticated' ? 'h-[122px] shrink-0 sm:h-[76px]' : 'h-[112px] shrink-0 sm:h-[66px]'} />
 
-      {/*
-       * Content area.
-       * Mobile (< lg): flex-col, no outer scroll — the chart is pinned at 40 dvh
-       *   (edge-to-edge, no horizontal padding) and the controls panel below it
-       *   scrolls independently only when content exceeds the remaining space.
-       * Desktop (≥ lg): reverts to natural block flow so the page can grow.
-       */}
-      <div className="flex w-full max-w-7xl mx-auto flex-col max-lg:px-0 max-lg:py-0 px-3 py-2 sm:px-4 sm:py-4 gap-2 sm:gap-3 max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:pb-28 lg:flex-none lg:overflow-visible">
-        <div className="max-lg:flex max-lg:flex-col max-lg:min-h-0 lg:grid lg:grid-cols-[1fr_400px] lg:gap-4">
-          <div className="max-lg:px-3 lg:col-span-2">
-            <div className="rounded-xl border border-border bg-muted/20 p-1 shadow-sm">
-              <div className="grid grid-cols-3 gap-1">
-                {CONTRACT_TABS.map(tab => (
-                  <Button
-                    key={tab.value}
-                    type="button"
-                    size="sm"
-                    variant={contractType === tab.value ? 'default' : 'ghost'}
-                    className="h-auto min-h-9 rounded-lg px-2 py-2 text-[11px] font-bold leading-tight sm:text-xs"
-                    onClick={() => setContractType(tab.value)}
-                  >
-                    {tab.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-3 px-3 py-2 sm:px-4 sm:py-4">
+        <div className="rounded-xl border border-border bg-muted/20 p-1 shadow-sm">
+          <div className="grid grid-cols-3 gap-1">
+            {CONTRACT_TABS.map(tab => (
+              <Button
+                key={tab.value}
+                type="button"
+                size="sm"
+                variant={contractType === tab.value ? 'default' : 'ghost'}
+                className="h-auto min-h-9 rounded-lg px-2 py-2 text-[11px] font-bold leading-tight sm:text-xs"
+                onClick={() => setContractType(tab.value)}
+              >
+                {tab.label}
+              </Button>
+            ))}
           </div>
+        </div>
 
-          {/* Column 1: Strategy panel + Chart */}
-          <div className="max-lg:shrink-0 flex flex-col gap-2 max-lg:px-3 max-lg:pb-2 pt-2 lg:py-0">
+        <div className="grid gap-3 lg:grid-cols-[1fr_400px] lg:gap-4">
+          <div className="flex flex-col gap-2">
             <div className="rounded-2xl border border-border bg-card shadow-sm">
               <button
                 type="button"
@@ -250,67 +181,59 @@ export function RiseFallView({
               </button>
 
               {isStrategyPanelOpen && (
-  <div className="border-t border-border p-3">
-    <StrategyPanel
-      latestPrice={
-        currentTick?.quote ??
-        prices[prices.length - 1] ??
-        null
-      }
-      pipSize={pipSize}
-      symbol={activeSymbol?.underlying_symbol}
-    />
-  </div>
-)}
+                <div className="border-t border-border p-3">
+                  <StrategyPanel
+                    latestPrice={currentTick?.quote ?? prices[prices.length - 1] ?? null}
+                    pipSize={pipSize}
+                    symbol={activeSymbol?.underlying_symbol}
+                  />
+                </div>
+              )}
             </div>
 
-            <div className={`${isStrategyPanelOpen ? 'max-lg:h-[31dvh]' : 'max-lg:h-[45dvh]'} lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] shrink-0`}>
+            <div className={`${isStrategyPanelOpen ? 'h-[31dvh]' : 'h-[45dvh]'} min-h-[280px] shrink-0 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]`}>
               {chartData && activeSymbol?.underlying_symbol ? (
                 <RiseFallChart
-  symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
-  symbol={activeSymbol.underlying_symbol}
-  isConnectionOpened={isConnected}
-  isMobile={isMobile}
-  chartData={chartData}
-  getQuotes={getQuotes}
-  subscribeQuotes={subscribeQuotes}
-  unsubscribeQuotes={unsubscribeQuotes}
-  onSymbolChange={selectSymbol}
-  isLive={isLive}
-  endEpoch={endEpoch}
-  contractsArray={contractMarkers}
-
-  barriers={
-    contractType !== 'rise-fall'
-      ? [
-          {
-            high: barrier,
-            relative: true,
-            draggable: false,
-            color: '#3b82f6',
-            foregroundColor: '#3b82f6',
-          },
-        ]
-      : undefined
-  }
-/>
+                  symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
+                  symbol={activeSymbol.underlying_symbol}
+                  isConnectionOpened={isConnected}
+                  isMobile={isMobile}
+                  chartData={chartData}
+                  getQuotes={getQuotes}
+                  subscribeQuotes={subscribeQuotes}
+                  unsubscribeQuotes={unsubscribeQuotes}
+                  onSymbolChange={selectSymbol}
+                  isLive={isLive}
+                  endEpoch={endEpoch}
+                  contractsArray={contractMarkers}
+                  barriers={
+                    contractType !== 'rise-fall'
+                      ? [
+                          {
+                            high: barrier,
+                            relative: true,
+                            draggable: false,
+                            color: '#3b82f6',
+                            foregroundColor: '#3b82f6',
+                          },
+                        ]
+                      : undefined
+                  }
+                />
               ) : (
-                <div className="h-full w-full flex items-center justify-center rounded-md border border-border/50 bg-muted/30">
-                  <div className="text-sm text-muted-foreground">
-                    Loading chart...
-                  </div>
+                <div className="flex h-full w-full items-center justify-center rounded-md border border-border/50 bg-muted/30">
+                  <div className="text-sm text-muted-foreground">Loading chart...</div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Column 2: Trade controls in a Card */}
-          <div className="max-lg:px-3 max-lg:border-t max-lg:border-border max-lg:pt-3 max-lg:pb-36 lg:pt-0 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 pb-4">
             {isLoading ? (
-              <Skeleton className="lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] max-lg:h-48 w-full rounded-xl" />
+              <Skeleton className="h-48 w-full rounded-xl lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]" />
             ) : (
-              <Card className="max-lg:h-full max-lg:overflow-y-auto lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
-                <CardContent className="pt-4 pb-40 sm:pb-32">
+              <Card className="lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
+                <CardContent className="pt-4 pb-12 sm:pb-8">
                   <TradeControls
                     contractType={contractType}
                     onContractTypeChange={setContractType}
@@ -349,10 +272,7 @@ export function RiseFallView({
         </div>
       </div>
 
-      {/* Fixed footer */}
-      <div className="shrink-0">
-  <Footer />
-</div>
+      <Footer />
     </main>
   );
 }
