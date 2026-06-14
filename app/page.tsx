@@ -24,7 +24,7 @@ function TemplateTabs({
   onChange: (value: TemplateKey) => void;
 }) {
   return (
-    <div className="fixed left-2 right-2 top-[76px] z-40 flex max-w-full gap-1 overflow-x-auto rounded-full border border-border/70 bg-background/95 p-1 shadow-lg backdrop-blur sm:left-1/2 sm:right-auto sm:top-2 sm:z-[60] sm:-translate-x-1/2">
+    <div className="fixed left-2 right-2 top-[70px] z-40 flex max-w-full gap-1 overflow-x-auto rounded-full border border-border/70 bg-background/95 p-1 shadow-lg backdrop-blur sm:left-1/2 sm:right-auto sm:top-2 sm:z-[60] sm:-translate-x-1/2">
       <Button
         type="button"
         size="sm"
