@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Sans } from 'next/font/google';
 import { buildFaviconUri } from '@/lib/build-favicon-uri';
 import { inter, FONT_CLASS_MAP } from '@/lib/fonts';
@@ -7,11 +7,6 @@ import '@deriv-com/smartcharts-champion/dist/smartcharts.css';
 import './globals.css';
 import './custom.css';
 
-// SmartCharts declares `font-family: IBM Plex Sans, sans-serif` internally.
-// Loading the font here makes it available to those declarations so the chart
-// renders with its intended typeface instead of falling back to the system
-// sans-serif.  We apply the variable to <body> so the @font-face rules are
-// emitted; SmartCharts resolves the family name automatically.
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
@@ -21,26 +16,42 @@ const ibmPlexSans = IBM_Plex_Sans({
 
 export function generateMetadata(): Metadata {
   const faviconUri = buildFaviconUri();
+
   return {
-    title: 'MarketEye Trading App',
-    description: 'MarketEye Rise/Fall and Digits trading templates powered by Deriv',
+    title: 'ChartEye Trading App',
+    description: 'ChartEye trading templates powered by Deriv',
     ...(faviconUri ? { icons: { icon: faviconUri } } : {}),
   };
 }
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 const fontClass =
   FONT_CLASS_MAP[process.env.NEXT_PUBLIC_FONT_FAMILY ?? 'Inter'] ??
   inter.className;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" className="h-full lg:h-auto" suppressHydrationWarning>
+    <html
+      lang="en"
+      className="min-h-full overflow-x-hidden"
+      suppressHydrationWarning
+    >
       <body
-        className={`${fontClass} ${ibmPlexSans.variable} bg-background flex min-h-dvh flex-col overflow-hidden max-lg:h-dvh max-lg:overflow-hidden lg:block lg:h-auto lg:min-h-screen lg:overflow-x-hidden lg:overflow-y-auto`}
+        className={`${fontClass} ${ibmPlexSans.variable} min-h-screen w-full overflow-x-hidden bg-background text-foreground`}
       >
-        <TemplateLayout>{children}</TemplateLayout>
+        <TemplateLayout>
+          {children}
+        </TemplateLayout>
       </body>
     </html>
   );
 }
-
