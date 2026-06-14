@@ -127,7 +127,7 @@ export function RiseFallView(props: RiseFallViewProps) {
   }
 
   return (
-    <main className="flex min-h-dvh flex-col bg-background">
+    <main className="min-h-dvh overflow-y-auto bg-background">
       <Header
         authState={authState}
         accounts={accounts}
@@ -143,7 +143,7 @@ export function RiseFallView(props: RiseFallViewProps) {
 
       <div className={authState === 'authenticated' ? 'h-[122px] shrink-0 sm:h-[76px]' : 'h-[112px] shrink-0 sm:h-[66px]'} />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-3 px-3 py-2 sm:px-4 sm:py-4">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-2 pb-8 sm:px-4 sm:py-4">
         <div className="rounded-xl border border-border bg-muted/20 p-1 shadow-sm">
           <div className="grid grid-cols-3 gap-1">
             {CONTRACT_TABS.map(tab => (
