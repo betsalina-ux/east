@@ -10,6 +10,7 @@ import { useSmartChartChartData } from '@/hooks/use-smartchart-chart-data';
 import { useRiseFallTrading } from '@/hooks/use-rise-fall-trading';
 import { useDigitsTrading } from '@/hooks/use-digits-trading';
 import { useContractMarkers } from '@/hooks/use-contract-markers';
+import { StrategyPanel } from '@/components/strategy-panel';
 import { SymbolSelector } from '@/components/custom/symbol-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,16 +29,8 @@ const RiseFallChart = dynamic(
 );
 
 type BotType = 'normal' | 'martingale';
-type BotMarket = 'rise-fall' | 'even-odd' | 'matches-differs' | 'over-under';
-type BotContract =
-  | 'CALL'
-  | 'PUT'
-  | 'DIGITEVEN'
-  | 'DIGITODD'
-  | 'DIGITMATCH'
-  | 'DIGITDIFF'
-  | 'DIGITOVER'
-  | 'DIGITUNDER';
+type BotMarket = 'rise-fall' | 'even-odd';
+type BotContract = 'CALL' | 'PUT' | 'DIGITEVEN' | 'DIGITODD';
 
 interface DBotWorkspaceProps {
   ws: DerivWS | null;
@@ -55,41 +48,21 @@ interface BotStats {
 }
 
 function getMarketLabel(market: BotMarket) {
-  switch (market) {
-    case 'rise-fall':
-      return 'Rise/Fall';
-    case 'even-odd':
-      return 'Even/Odd';
-    case 'matches-differs':
-      return 'Matches/Differs';
-    case 'over-under':
-      return 'Over/Under';
-  }
+  return market === 'rise-fall' ? 'Rise/Fall' : 'Even/Odd';
 }
 
 function getContractOptions(market: BotMarket): { label: string; value: BotContract }[] {
-  switch (market) {
-    case 'rise-fall':
-      return [
-        { label: 'Rise', value: 'CALL' },
-        { label: 'Fall', value: 'PUT' },
-      ];
-    case 'even-odd':
-      return [
-        { label: 'Even', value: 'DIGITEVEN' },
-        { label: 'Odd', value: 'DIGITODD' },
-      ];
-    case 'matches-differs':
-      return [
-        { label: 'Matches', value: 'DIGITMATCH' },
-        { label: 'Differs', value: 'DIGITDIFF' },
-      ];
-    case 'over-under':
-      return [
-        { label: 'Over', value: 'DIGITOVER' },
-        { label: 'Under', value: 'DIGITUNDER' },
-      ];
+  if (market === 'rise-fall') {
+    return [
+      { label: 'Rise', value: 'CALL' },
+      { label: 'Fall', value: 'PUT' },
+    ];
   }
+
+  return [
+    { label: 'Even', value: 'DIGITEVEN' },
+    { label: 'Odd', value: 'DIGITODD' },
+  ];
 }
 
 function getDefaultContract(market: BotMarket): BotContract {
@@ -124,7 +97,6 @@ export function DBotWorkspace({
   const [maxStake, setMaxStake] = useState('50');
   const [profitTarget, setProfitTarget] = useState('5');
   const [lossLimit, setLossLimit] = useState('2');
-  const [selectedDigit, setSelectedDigit] = useState('5');
 
   const [currentStake, setCurrentStake] = useState(1);
   const [isBotRunning, setIsBotRunning] = useState(false);
@@ -159,7 +131,7 @@ export function DBotWorkspace({
     onAuthWSFailed,
   });
 
-  const isDigitsMarket = botMarket !== 'rise-fall';
+  const isDigitsMarket = botMarket === 'even-odd';
   const activeTrading = isDigitsMarket ? digits : riseFall;
 
   const { chartData } = useSmartChartChartData(
@@ -195,6 +167,7 @@ export function DBotWorkspace({
 
   useEffect(() => {
     const initialStake = Number(stake);
+
     if (Number.isFinite(initialStake) && initialStake > 0 && !isBotRunning) {
       setCurrentStake(initialStake);
       currentStakeRef.current = initialStake;
@@ -221,16 +194,6 @@ export function DBotWorkspace({
       digits.setTradeType('even-odd');
       digits.setContractMode('DIGITEVEN');
     }
-
-    if (value === 'matches-differs') {
-      digits.setTradeType('matches-differs');
-      digits.setContractMode('DIGITMATCH');
-    }
-
-    if (value === 'over-under') {
-      digits.setTradeType('over-under');
-      digits.setContractMode('DIGITOVER');
-    }
   }
 
   const buildBotParams = useCallback((): ProposalParams | null => {
@@ -242,18 +205,6 @@ export function DBotWorkspace({
     if (!Number.isFinite(amount) || amount <= 0) return null;
     if (!Number.isFinite(ticks) || ticks <= 0) return null;
 
-    const needsDigitBarrier =
-      botContract === 'DIGITMATCH' ||
-      botContract === 'DIGITDIFF' ||
-      botContract === 'DIGITOVER' ||
-      botContract === 'DIGITUNDER';
-
-    const digitValue = Number(selectedDigit);
-
-    if (needsDigitBarrier && (!Number.isFinite(digitValue) || digitValue < 0 || digitValue > 9)) {
-      return null;
-    }
-
     return {
       contractType: botContract,
       symbol: activeTrading.activeSymbol.underlying_symbol,
@@ -262,9 +213,8 @@ export function DBotWorkspace({
       durationUnit: 't',
       basis: 'stake',
       currency: 'USD',
-      ...(needsDigitBarrier ? { barrier: digitValue } : {}),
     };
-  }, [activeTrading.activeSymbol?.underlying_symbol, botContract, duration, selectedDigit]);
+  }, [activeTrading.activeSymbol?.underlying_symbol, botContract, duration]);
 
   const placeNextTrade = useCallback(async () => {
     if (!isBotRunningRef.current) return;
@@ -461,7 +411,7 @@ export function DBotWorkspace({
           <div>
             <h1 className="text-xl font-bold">D BOT</h1>
             <p className="text-sm text-muted-foreground">
-              Chart, market selector, and bot manager.
+              Chart, market selector, strategy panel, and bot manager.
             </p>
           </div>
 
@@ -480,8 +430,6 @@ export function DBotWorkspace({
               <SelectContent>
                 <SelectItem value="rise-fall">Rise/Fall</SelectItem>
                 <SelectItem value="even-odd">Even/Odd</SelectItem>
-                <SelectItem value="matches-differs">Matches/Differs</SelectItem>
-                <SelectItem value="over-under">Over/Under</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -547,6 +495,23 @@ export function DBotWorkspace({
         </div>
       </div>
 
+      <div className="rounded-2xl border bg-card p-4 shadow-sm">
+        <div className="mb-4">
+          <h2 className="text-lg font-bold">D BOT Strategy Panel</h2>
+          <p className="text-sm text-muted-foreground">
+            Rise/Fall uses MTS. Even/Odd uses PIS.
+          </p>
+        </div>
+
+        <StrategyPanel
+          latestPrice={activeTrading.currentTick?.quote ?? null}
+          pipSize={activeTrading.pipSize ?? 2}
+          symbol={activeTrading.activeSymbol?.underlying_symbol}
+          variant="dbot"
+          forcedMarket={botMarket}
+        />
+      </div>
+
       <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
         <div className="rounded-2xl border bg-card p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-bold">Bot Settings</h2>
@@ -561,20 +526,6 @@ export function DBotWorkspace({
               <Label>Duration ticks</Label>
               <Input value={duration} onChange={(event) => setDuration(event.target.value)} disabled={isBotRunning} />
             </div>
-
-            {isDigitsMarket && (
-              <div className="space-y-2">
-                <Label>Digit prediction</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={9}
-                  value={selectedDigit}
-                  onChange={(event) => setSelectedDigit(event.target.value)}
-                  disabled={isBotRunning}
-                />
-              </div>
-            )}
 
             {botType === 'martingale' && (
               <>
