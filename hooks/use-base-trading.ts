@@ -93,9 +93,11 @@ export function useBaseTrading({
       const err = data.error as Record<string, string>;
 const message = err.message ?? 'Unexpected error occurred. Please try again.';
 
+const lowerMessage = message.toLowerCase();
+
 if (
-  msgType === 'proposal_open_contract' &&
-  message.toLowerCase().includes('already subscribed')
+  lowerMessage.includes('already subscribed') ||
+  lowerMessage.includes('proposal_open_contract')
 ) {
   return;
 }
