@@ -156,12 +156,8 @@ export function useOpenPositions(
       latest.count -= 1;
 
       if (latest.count <= 0) {
-        openContractSubscriptions.delete(ws);
-
-        if (ws.isConnected) {
-          ws.send({ forget_all: 'proposal_open_contract' }).catch(() => {});
-        }
-      }
+  latest.count = 0;
+}
     };
   }, [ws, isConnected, isAuthenticated, scheduleRemoval]);
 
