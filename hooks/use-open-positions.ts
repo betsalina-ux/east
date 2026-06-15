@@ -22,23 +22,34 @@ export interface OpenPosition {
   is_sold: number;
   is_valid_to_sell: number;
   tick_count: number;
-  /** Live tick stream for a running tick contract — each entry is one elapsed tick. */
   tick_stream?: Array<{ epoch: number; tick: number; tick_display_value: string }>;
-  /** Entry spot price — used for chart marker positioning. */
   entry_spot?: number;
-  /** Entry tick epoch (seconds) — may differ slightly from date_start. */
   entry_tick_time?: number;
-  /** Current spot epoch — used as the live currentEpoch for chart markers. */
   current_spot_time?: number;
-  /** Exit spot price — populated on the final POC update when a contract closes. */
   exit_spot?: number;
-  /** Exit spot epoch — populated on the final POC update when a contract closes. */
   exit_spot_time?: number;
 }
 
-// How long (ms) to keep a just-closed position in state so SmartCharts can
-// render the exit spot and P&L label markers before removing it.
 const CLOSED_POSITION_TTL_MS = 1500;
+
+type OpenContractSubscriptionState = {
+  count: number;
+  active: boolean;
+  subscribing: boolean;
+};
+
+const openContractSubscriptions = new WeakMap<DerivWS, OpenContractSubscriptionState>();
+
+function isAlreadySubscribedError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : JSON.stringify(error ?? '');
+
+  return message.toLowerCase().includes('already subscribed');
+}
 
 export function useOpenPositions(
   ws: DerivWS | null,
@@ -46,13 +57,9 @@ export function useOpenPositions(
   isAuthenticated: boolean
 ) {
   const [positions, setPositions] = useState<OpenPosition[]>([]);
-  // Track pending removal timers keyed by contract_id
   const removalTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
-  // Track whether we have an active subscription so we can forget_all on cleanup
-  const isSubscribedRef = useRef(false);
 
   const scheduleRemoval = useCallback((contractId: number) => {
-    // Cancel any existing timer for this contract first
     const existing = removalTimers.current.get(contractId);
     if (existing) clearTimeout(existing);
 
@@ -66,53 +73,95 @@ export function useOpenPositions(
 
   useEffect(() => {
     if (!ws || !isConnected || !isAuthenticated) {
-      return () => { setPositions([]); };
+      setPositions([]);
+      return;
     }
 
-    // Capture ref value at effect time so the cleanup closure has a stable reference
     const timers = removalTimers.current;
 
-    // Use global message listener — each open contract has its own subscription.id
-    // so we can't use ws.subscribe() for all of them; onMessage catches everything.
+    let subscriptionState = openContractSubscriptions.get(ws);
+
+    if (!subscriptionState) {
+      subscriptionState = {
+        count: 0,
+        active: false,
+        subscribing: false,
+      };
+
+      openContractSubscriptions.set(ws, subscriptionState);
+    }
+
+    subscriptionState.count += 1;
+
     const unsubscribeListener = ws.onMessage((data) => {
       if (data.msg_type !== 'proposal_open_contract') return;
+      if (data.error) return;
+
       const contract = data.proposal_open_contract as OpenPosition | undefined;
       if (!contract) return;
 
       const isClosed =
-        !!contract.is_sold || !!contract.is_expired || contract.status !== 'open';
+        Boolean(contract.is_sold) ||
+        Boolean(contract.is_expired) ||
+        contract.status !== 'open';
 
       setPositions((prev) => {
         const map = new Map(prev.map((p) => [p.contract_id, p]));
-        // Always upsert the latest data (including exit_spot/exit_spot_time on close)
         map.set(contract.contract_id, contract);
         return Array.from(map.values());
       });
 
       if (isClosed) {
-        // Schedule removal after TTL so exit markers are briefly visible
         scheduleRemoval(contract.contract_id);
       }
     });
 
-    // Kick off subscription — server sends one message per open contract,
-    // each with its own subscription.id for live updates.
-    ws.send({ proposal_open_contract: 1, subscribe: 1 })
-      .then(() => { isSubscribedRef.current = true; })
-      .catch(() => {});
+    if (!subscriptionState.active && !subscriptionState.subscribing) {
+      subscriptionState.subscribing = true;
+
+      ws.send({ proposal_open_contract: 1, subscribe: 1 })
+        .then(() => {
+          const latest = openContractSubscriptions.get(ws);
+
+          if (latest) {
+            latest.active = true;
+            latest.subscribing = false;
+          }
+        })
+        .catch((error) => {
+          const latest = openContractSubscriptions.get(ws);
+
+          if (latest) {
+            latest.subscribing = false;
+
+            if (isAlreadySubscribedError(error)) {
+              latest.active = true;
+            }
+          }
+        });
+    }
 
     return () => {
       unsubscribeListener();
-      // Clear all pending removal timers on cleanup
-      timers.forEach((t) => clearTimeout(t));
+
+      timers.forEach((timer) => clearTimeout(timer));
       timers.clear();
+
       setPositions([]);
-      // Cancel all open-contract streams on the server so the next mount
-      // can re-subscribe without hitting AlreadySubscribed.
-      if (isSubscribedRef.current && ws.isConnected) {
-        ws.send({ forget_all: 'proposal_open_contract' }).catch(() => {});
+
+      const latest = openContractSubscriptions.get(ws);
+
+      if (!latest) return;
+
+      latest.count -= 1;
+
+      if (latest.count <= 0) {
+        openContractSubscriptions.delete(ws);
+
+        if (ws.isConnected) {
+          ws.send({ forget_all: 'proposal_open_contract' }).catch(() => {});
+        }
       }
-      isSubscribedRef.current = false;
     };
   }, [ws, isConnected, isAuthenticated, scheduleRemoval]);
 
