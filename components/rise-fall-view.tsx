@@ -127,7 +127,7 @@ export function RiseFallView(props: RiseFallViewProps) {
   }
 
   return (
-    <main className="min-h-dvh overflow-y-auto bg-background">
+    <main className="h-dvh w-full overflow-x-hidden overflow-y-auto bg-background">
       <Header
         authState={authState}
         accounts={accounts}
@@ -143,7 +143,7 @@ export function RiseFallView(props: RiseFallViewProps) {
 
       <div className={authState === 'authenticated' ? 'h-[122px] shrink-0 sm:h-[76px]' : 'h-[112px] shrink-0 sm:h-[66px]'} />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-2 pb-8 sm:px-4 sm:py-4">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-2 pb-10 sm:px-4 sm:py-4">
         <div className="rounded-xl border border-border bg-muted/20 p-1 shadow-sm">
           <div className="grid grid-cols-3 gap-1">
             {CONTRACT_TABS.map(tab => (
@@ -191,7 +191,7 @@ export function RiseFallView(props: RiseFallViewProps) {
               )}
             </div>
 
-            <div className={`${isStrategyPanelOpen ? 'h-[31dvh]' : 'h-[45dvh]'} min-h-[280px] shrink-0 lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]`}>
+            <div className={`${isStrategyPanelOpen ? 'h-[31dvh]' : 'h-[42dvh]'} min-h-[250px] shrink-0 touch-pan-y lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]`}>
               {chartData && activeSymbol?.underlying_symbol ? (
                 <RiseFallChart
                   symbolKey={`rise-fall-chart-${activeSymbol?.underlying_symbol || 'loading'}`}
@@ -228,12 +228,12 @@ export function RiseFallView(props: RiseFallViewProps) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 pb-4">
+          <div className="flex flex-col gap-3 pb-6">
             {isLoading ? (
               <Skeleton className="h-48 w-full rounded-xl lg:h-[min(33.6rem,66vh)] lg:min-h-[384px]" />
             ) : (
               <Card className="lg:h-[min(33.6rem,66vh)] lg:min-h-[384px] lg:overflow-y-auto">
-                <CardContent className="pt-4 pb-12 sm:pb-8">
+                <CardContent className="pt-4 pb-10 sm:pb-8">
                   <TradeControls
                     contractType={contractType}
                     onContractTypeChange={setContractType}
