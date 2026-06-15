@@ -91,9 +91,18 @@ export function useBaseTrading({
       const msgType = data.msg_type as string | undefined;
       if (msgType === 'buy' || msgType === 'sell') return;
       const err = data.error as Record<string, string>;
-      toast.error('Error', {
-        description: err.message ?? 'Unexpected error occurred. Please try again.',
-      });
+const message = err.message ?? 'Unexpected error occurred. Please try again.';
+
+if (
+  msgType === 'proposal_open_contract' &&
+  message.toLowerCase().includes('already subscribed')
+) {
+  return;
+}
+
+toast.error('Error', {
+  description: message,
+});
     });
   }, [ws, isConnected]);
 
