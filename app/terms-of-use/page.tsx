@@ -19,7 +19,7 @@ function PageLogo() {
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen w-full overflow-x-hidden overflow-y-auto bg-background">
+    <main className="fixed inset-0 w-full overflow-x-hidden overflow-y-scroll bg-background">
   <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
         <PageLogo />
 
