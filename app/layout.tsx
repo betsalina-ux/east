@@ -40,17 +40,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className="min-h-full overflow-x-hidden"
-      suppressHydrationWarning
-    >
+    <html lang="en" className="min-h-full w-full overflow-x-hidden" suppressHydrationWarning>
       <body
-  className={`${fontClass} ${ibmPlexSans.variable} min-h-screen w-full overflow-x-hidden overflow-y-auto bg-background text-foreground`}
->
-        <TemplateLayout>
-          {children}
-        </TemplateLayout>
+        className={`${fontClass} ${ibmPlexSans.variable} min-h-screen w-full touch-pan-y overflow-x-hidden overflow-y-auto bg-background text-foreground`}
+      >
+        <TemplateLayout>{children}</TemplateLayout>
       </body>
     </html>
   );
